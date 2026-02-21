@@ -37,10 +37,23 @@ class HesabpayReconciliation(models.TransientModel):
     excel_file     = fields.Binary(string='HesabPay Excel File', attachment=False)
     excel_filename = fields.Char(string='Filename')
 
+    # All lines
     line_ids = fields.One2many(
         'hesabpay.reconciliation.line',
         'reconciliation_id',
-        string='Reconciliation Lines',
+        string='All Lines',
+    )
+
+    # Mismatch lines only — separate One2many with domain in Python
+    mismatch_line_ids = fields.One2many(
+        'hesabpay.reconciliation.line',
+        'reconciliation_id',
+        string='Mismatches',
+        domain=lambda self: [
+            '|', ('name_mismatch', '=', True),
+            '|', ('amount_mismatch', '=', True),
+                 ('hp_found', '=', False),
+        ],
     )
 
     state = fields.Selection([

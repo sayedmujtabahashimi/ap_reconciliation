@@ -181,10 +181,9 @@
                         </page>
 
                         <page string="Mismatches Only">
-                            <field name="line_ids"
+                            <field name="mismatch_line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   domain="['|', ('name_mismatch', '=', True), '|', ('amount_mismatch', '=', True), ('hp_found', '=', False)]"
                                    context="{'list_view_ref': 'hesabpay_reconciliation.view_recon_line_list_mismatch'}"/>
                         </page>
 
