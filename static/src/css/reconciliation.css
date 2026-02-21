@@ -1,0 +1,140 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   HesabPay Reconciliation — Custom Styles
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Action Row ──────────────────────────────────────────────────────────── */
+.o_hesabpay_reconciliation .o_recon_action_row {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0 8px 0;
+    flex-wrap: wrap;
+}
+
+.o_hesabpay_reconciliation .o_recon_btn {
+    min-width: 220px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 10px 20px;
+}
+
+/* ── Hint Text ───────────────────────────────────────────────────────────── */
+.o_hesabpay_reconciliation .o_recon_hint {
+    background: #f0f4ff;
+    border-left: 4px solid #4a72f5;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    color: #333;
+    margin-top: 6px;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+.o_hesabpay_reconciliation .o_recon_legend {
+    display: flex;
+    gap: 20px;
+    padding: 8px 12px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.o_recon_legend_item {
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.o_recon_ok      { color: #28a745; }
+.o_recon_mismatch { color: #dc3545; }
+.o_recon_notfound { color: #856404; }
+
+/* ── Table Row Colors ────────────────────────────────────────────────────── */
+
+/* Odoo default decoration-danger = red text; we make the whole row red-tinted */
+.o_hesabpay_reconciliation .o_data_row.o_list_row_danger {
+    background-color: #fff5f5 !important;
+    color: #c0392b !important;
+}
+
+.o_hesabpay_reconciliation .o_data_row.o_list_row_danger td {
+    border-bottom: 2px solid #e74c3c !important;
+}
+
+/* decoration-warning = orange/yellow tint */
+.o_hesabpay_reconciliation .o_data_row.o_list_row_warning {
+    background-color: #fffbea !important;
+    color: #856404 !important;
+}
+
+/* decoration-success = green tint */
+.o_hesabpay_reconciliation .o_data_row.o_list_row_success {
+    background-color: #f0fff4 !important;
+    color: #155724 !important;
+}
+
+/* Individual cell danger — name or amount mismatch cells */
+.o_hesabpay_reconciliation td.o_field_cell[name="hp_partner_name"].o_red_cell,
+.o_hesabpay_reconciliation td.o_field_cell[name="hp_total_amount"].o_red_cell,
+.o_hesabpay_reconciliation td.o_field_cell[name="amount_difference"].o_red_cell {
+    color: #dc3545 !important;
+    font-weight: 700;
+    text-decoration: underline wavy #dc3545;
+}
+
+/* ── Title ───────────────────────────────────────────────────────────────── */
+.o_hesabpay_reconciliation .oe_title h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #3d4a6b;
+}
+
+.o_hesabpay_reconciliation .oe_title p {
+    color: #888;
+    margin-top: -8px;
+}
+
+/* ── Status bar polish ───────────────────────────────────────────────────── */
+.o_hesabpay_reconciliation .o_statusbar_status button.o_arrow_button {
+    font-size: 0.85rem;
+}
+
+/* ── Column header emphasis ──────────────────────────────────────────────── */
+.o_hesabpay_reconciliation thead th {
+    background-color: #f0f3ff;
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Separator visual between Odoo and HP columns */
+.o_hesabpay_reconciliation thead th:nth-child(8),
+.o_hesabpay_reconciliation tbody td:nth-child(8) {
+    border-left: 3px solid #4a72f5 !important;
+}
+
+/* ── Summary Badges ──────────────────────────────────────────────────────── */
+.o_hesabpay_reconciliation .o_recon_summary {
+    display: flex;
+    gap: 12px;
+    margin: 10px 0 16px 0;
+    flex-wrap: wrap;
+}
+.o_recon_badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.o_recon_badge.o_recon_total    { background: #e8eaf6; color: #3949ab; }
+.o_recon_badge.o_recon_ok       { background: #e8f5e9; color: #2e7d32; }
+.o_recon_badge.o_recon_mismatch { background: #ffebee; color: #c62828; }
+.o_recon_badge.o_recon_notfound { background: #fff8e1; color: #f57f17; }

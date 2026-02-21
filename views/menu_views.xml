@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Top-level menu under Accounting -->
+    <menuitem
+        id="menu_hesabpay_root"
+        name="HesabPay Reconciliation"
+        parent="account.menu_finance"
+        sequence="99"/>
+
+    <!-- Sub-menu item -->
+    <menuitem
+        id="menu_hesabpay_reconciliation"
+        name="Reconciliation"
+        parent="menu_hesabpay_root"
+        action="action_hesabpay_reconciliation"
+        sequence="10"/>
+
+</odoo>
