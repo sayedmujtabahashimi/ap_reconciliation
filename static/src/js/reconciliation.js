@@ -1,6 +1,6 @@
 /** @odoo-module **/
 /**
- * HesabPay Reconciliation — Odoo 17 JS
+ * Afghan Post Reconciliation — Odoo 17 JS
  *
  * Odoo 17 uses OWL components. This file is kept minimal because
  * all visual logic is handled via:
@@ -10,4 +10,4 @@
  * No custom OWL component patch is needed for basic highlighting.
  */
 
-console.info("[HesabPay Reconciliation] Odoo 17 module loaded.");
+console.info("[Afghan Post Reconciliation] Odoo 17 module loaded.");

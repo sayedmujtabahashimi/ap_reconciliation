@@ -1,29 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!--
-        KEY RULE in Odoo 17:
-        Any <tree> written INSIDE a <field> in a form view is validated
-        against the PARENT form's model — not the field's comodel.
+    <!-- ══════════════════════════════════════════════════════════
+         STANDALONE TREE VIEWS FOR LINE MODEL
+    ══════════════════════════════════════════════════════════ -->
 
-        SOLUTION: Never write <tree> inside the form at all.
-        1. Declare standalone ir.ui.view records for the line model.
-        2. In the form, reference them only via context list_view_ref.
-    -->
-
-    <!-- ══════════════════════════════════════════════════
-         STANDALONE LIST VIEW — hesabpay.reconciliation.line
-         (All lines)
-    ══════════════════════════════════════════════════ -->
     <record id="view_recon_line_list_all" model="ir.ui.view">
-        <field name="name">hesabpay.reconciliation.line.list.all</field>
-        <field name="model">hesabpay.reconciliation.line</field>
+        <field name="name">ap.reconciliation.line.tree.all</field>
+        <field name="model">ap.reconciliation.line</field>
         <field name="arch" type="xml">
-            <tree
-                decoration-danger="name_mismatch == True or amount_mismatch == True"
-                decoration-warning="hp_found == False"
-                decoration-success="hp_found == True and name_mismatch == False and amount_mismatch == False"
-                create="false" delete="false" edit="false">
+            <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
+                  decoration-warning="hp_found == False"
+                  decoration-success="hp_found == True and name_mismatch == False and amount_mismatch == False"
+                  create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
                 <field name="partner_name"      string="Odoo Customer"/>
                 <field name="invoice_date"      string="Odoo Date"/>
@@ -48,18 +37,13 @@
         </field>
     </record>
 
-    <!-- ══════════════════════════════════════════════════
-         STANDALONE LIST VIEW — hesabpay.reconciliation.line
-         (Mismatches only)
-    ══════════════════════════════════════════════════ -->
     <record id="view_recon_line_list_mismatch" model="ir.ui.view">
-        <field name="name">hesabpay.reconciliation.line.list.mismatch</field>
-        <field name="model">hesabpay.reconciliation.line</field>
+        <field name="name">ap.reconciliation.line.tree.mismatch</field>
+        <field name="model">ap.reconciliation.line</field>
         <field name="arch" type="xml">
-            <tree
-                decoration-danger="name_mismatch == True or amount_mismatch == True"
-                decoration-warning="hp_found == False"
-                create="false" delete="false" edit="false">
+            <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
+                  decoration-warning="hp_found == False"
+                  create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
                 <field name="partner_name"      string="Odoo Customer"/>
                 <field name="invoice_date"      string="Odoo Date"/>
@@ -81,27 +65,52 @@
         </field>
     </record>
 
-    <!-- ══════════════════════════════════════════════════
-         MAIN FORM VIEW — hesabpay.reconciliation
-         NO <tree> written here. line_ids uses context only.
-    ══════════════════════════════════════════════════ -->
-    <record id="view_hesabpay_reconciliation_form" model="ir.ui.view">
-        <field name="name">hesabpay.reconciliation.form</field>
-        <field name="model">hesabpay.reconciliation</field>
+    <!-- ══════════════════════════════════════════════════════════
+         FORM VIEW
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_ap_reconciliation_form" model="ir.ui.view">
+        <field name="name">ap.reconciliation.form</field>
+        <field name="model">ap.reconciliation</field>
         <field name="arch" type="xml">
-            <form string="HesabPay Reconciliation" class="o_hesabpay_reconciliation">
+            <form string="AP Reconciliation" class="o_ap_reconciliation">
 
                 <header>
+                    <button name="action_reset"
+                            string="Reset"
+                            type="object"
+                            class="btn btn-secondary"
+                            invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,loaded,reconciled"/>
                 </header>
 
                 <sheet>
                     <div class="oe_title">
-                        <h1>HesabPay Reconciliation</h1>
-                        <p class="text-muted">
-                            Compare Odoo invoices with HesabPay bank records
-                        </p>
+                        <label for="name" string="Reconciliation Reference"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. January 2026 Reconciliation"/>
+                        </h1>
+                        <div class="o_recon_meta" invisible="state == 'draft'">
+                            <span>Created: <field name="create_date" readonly="1"/></span>
+                            <span style="margin-left:16px;">Last Updated: <field name="write_date" readonly="1"/></span>
+                        </div>
+                    </div>
+
+                    <!-- Summary badges -->
+                    <div class="o_recon_summary" invisible="state != 'reconciled'">
+                        <span class="o_recon_badge o_recon_total">
+                            Total: <field name="total_lines" readonly="1"/>
+                        </span>
+                        <span class="o_recon_badge o_recon_ok">
+                            ✔ Matched: <field name="matched_lines" readonly="1"/>
+                        </span>
+                        <span class="o_recon_badge o_recon_mismatch">
+                            ✗ Mismatch: <field name="mismatch_lines" readonly="1"/>
+                        </span>
+                        <span class="o_recon_badge o_recon_notfound">
+                            ? Not Found: <field name="not_found_lines" readonly="1"/>
+                        </span>
                     </div>
 
                     <!-- STEP 1: FILTERS -->
@@ -130,7 +139,7 @@
                                 class="btn btn-primary btn-lg o_recon_btn"/>
                     </div>
 
-                    <!-- STEP 2: UPLOAD HESABPAY -->
+                    <!-- STEP 2: UPLOAD -->
                     <group string="Step 2 — Import HesabPay File"
                            invisible="state == 'draft'">
                         <group>
@@ -148,7 +157,7 @@
                     </group>
 
                     <div class="o_recon_action_row" invisible="state == 'draft'">
-                        <button name="action_import_hesabpay"
+                        <button name="action_import_excel"
                                 string="📥  Compare with HesabPay"
                                 type="object"
                                 class="btn btn-warning btn-lg o_recon_btn"/>
@@ -166,40 +175,76 @@
                         <span class="o_recon_legend_item o_recon_notfound">■ Not Found</span>
                     </div>
 
-                    <!--
-                        CRITICAL: No <tree> child here.
-                        We only set context so Odoo picks up the
-                        pre-registered standalone list view for the comodel.
-                    -->
                     <notebook invisible="state == 'draft'">
-
                         <page string="All Lines">
                             <field name="line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   context="{'list_view_ref': 'hesabpay_reconciliation.view_recon_line_list_all'}"/>
+                                   context="{'list_view_ref': 'ap_reconciliation.view_recon_line_list_all'}"/>
                         </page>
-
                         <page string="Mismatches Only">
                             <field name="mismatch_line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   context="{'list_view_ref': 'hesabpay_reconciliation.view_recon_line_list_mismatch'}"/>
+                                   context="{'list_view_ref': 'ap_reconciliation.view_recon_line_list_mismatch'}"/>
                         </page>
-
                     </notebook>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- ══════════════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════
+         LIST VIEW — browse all saved reconciliation records
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_ap_reconciliation_list" model="ir.ui.view">
+        <field name="name">ap.reconciliation.list</field>
+        <field name="model">ap.reconciliation</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"            string="Reference"/>
+                <field name="date_filter"     string="Period"/>
+                <field name="date_from"       string="From"/>
+                <field name="date_to"         string="To"/>
+                <field name="total_lines"     string="Total"/>
+                <field name="matched_lines"   string="Matched"/>
+                <field name="mismatch_lines"  string="Mismatches"/>
+                <field name="not_found_lines" string="Not Found"/>
+                <field name="create_date"     string="Created"/>
+                <field name="state"           widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_ap_reconciliation_search" model="ir.ui.view">
+        <field name="name">ap.reconciliation.search</field>
+        <field name="model">ap.reconciliation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="reconciled" string="Reconciled"
+                        domain="[('state','=','reconciled')]"/>
+                <filter name="loaded" string="Loaded"
+                        domain="[('state','=','loaded')]"/>
+                <filter name="draft" string="Draft"
+                        domain="[('state','=','draft')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
          WINDOW ACTION
-    ══════════════════════════════════════════════════ -->
-    <record id="action_hesabpay_reconciliation" model="ir.actions.act_window">
-        <field name="name">HesabPay Reconciliation</field>
-        <field name="res_model">hesabpay.reconciliation</field>
-        <field name="view_mode">form</field>
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_ap_reconciliation" model="ir.actions.act_window">
+        <field name="name">AP Reconciliation</field>
+        <field name="res_model">ap.reconciliation</field>
+        <field name="view_mode">tree,form</field>
         <field name="target">current</field>
         <field name="context">{'default_date_filter': 'this_month'}</field>
     </record>

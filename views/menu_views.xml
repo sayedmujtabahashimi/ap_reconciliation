@@ -3,17 +3,17 @@
 
     <!-- Top-level menu under Accounting -->
     <menuitem
-        id="menu_hesabpay_root"
-        name="HesabPay Reconciliation"
+        id="menu_ap_reconciliation_root"
+        name="Afghan Post Reconciliation"
         parent="account.menu_finance"
         sequence="99"/>
 
     <!-- Sub-menu item -->
     <menuitem
-        id="menu_hesabpay_reconciliation"
+        id="menu_ap_reconciliation"
         name="Reconciliation"
-        parent="menu_hesabpay_root"
-        action="action_hesabpay_reconciliation"
+        parent="menu_ap_reconciliation_root"
+        action="action_ap_reconciliation"
         sequence="10"/>
 
 </odoo>

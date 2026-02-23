@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hesabpay_reconciliation,hesabpay.reconciliation,model_hesabpay_reconciliation,account.group_account_user,1,1,1,1
-access_hesabpay_reconciliation_line,hesabpay.reconciliation.line,model_hesabpay_reconciliation_line,account.group_account_user,1,1,1,1
+access_ap_reconciliation_user,ap.reconciliation user,model_ap_reconciliation,account.group_account_user,1,1,1,1
+access_ap_reconciliation_line_user,ap.reconciliation.line user,model_ap_reconciliation_line,account.group_account_user,1,1,1,1
+access_ap_reconciliation_manager,ap.reconciliation manager,model_ap_reconciliation,account.group_account_manager,1,1,1,1
+access_ap_reconciliation_line_manager,ap.reconciliation.line manager,model_ap_reconciliation_line,account.group_account_manager,1,1,1,1

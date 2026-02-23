@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'HesabPay Reconciliation',
+    'name': 'AP Reconciliation',
     'version': '17.0.1.0.0',
     'category': 'Accounting',
-    'summary': 'Reconcile Odoo invoices with HesabPay Excel bank records',
+    'summary': 'Reconcile Afghan Post invoices with HesabPay bank records',
     'description': """
-HesabPay Reconciliation
+Afghan Post Reconciliation
 =======================
 - Filter invoices: Today / This Week / This Month / This Year / Custom date range
 - Filter by journal (multi-select)
@@ -17,14 +17,14 @@ HesabPay Reconciliation
     'author': 'Custom',
     'depends': ['account'],
     'data': [
-        'security/ir.model.access.csv',
         'views/reconciliation_views.xml',
         'views/menu_views.xml',
+        'security/ir.model.access.csv',
     ],
     'assets': {
         'web.assets_backend': [
-            'hesabpay_reconciliation/static/src/css/reconciliation.css',
-            'hesabpay_reconciliation/static/src/js/reconciliation.js',
+            'ap_reconciliation/static/src/css/reconciliation.css',
+            'ap_reconciliation/static/src/js/reconciliation.js',
         ],
     },
     'installable': True,
