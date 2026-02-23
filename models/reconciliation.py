@@ -45,6 +45,11 @@ class ApReconciliation(models.Model):
         domain=[('type', 'in', ['sale', 'purchase', 'bank', 'cash'])],
     )
 
+    invoice_number_filter = fields.Char(
+        string='Invoice # Contains',
+        help='Filter invoices by number prefix/keyword e.g. "mofa", "MOhe", "260101"'
+    )
+
     excel_file     = fields.Binary(string='HesabPay Excel File', attachment=True)
     excel_filename = fields.Char(string='Filename')
 
@@ -146,6 +151,9 @@ class ApReconciliation(models.Model):
 
         if self.journal_ids:
             domain += [('journal_id', 'in', self.journal_ids.ids)]
+
+        if self.invoice_number_filter:
+            domain += [('name', 'ilike', self.invoice_number_filter.strip())]
 
         _logger.info('AP Recon domain: %s', domain)
 
