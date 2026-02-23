@@ -14,10 +14,6 @@ except ImportError:
 
 
 class ApReconciliation(models.Model):
-    """
-    Afghan Post Reconciliation — persistent records.
-    Each reconciliation session is saved permanently.
-    """
     _name        = 'ap.reconciliation'
     _description = 'AP Reconciliation'
     _order       = 'id desc'
@@ -52,14 +48,12 @@ class ApReconciliation(models.Model):
     excel_file     = fields.Binary(string='HesabPay Excel File', attachment=True)
     excel_filename = fields.Char(string='Filename')
 
-    # All lines
     line_ids = fields.One2many(
         'ap.reconciliation.line',
         'reconciliation_id',
         string='All Lines',
     )
 
-    # Mismatch lines — filtered via domain on the field
     mismatch_line_ids = fields.One2many(
         'ap.reconciliation.line',
         'reconciliation_id',
@@ -77,14 +71,10 @@ class ApReconciliation(models.Model):
         ('reconciled', 'Reconciled'),
     ], default='draft', string='State', required=True)
 
-    # ── Summary fields ────────────────────────────────────────────────────────
-    total_lines     = fields.Integer(string='Total',      compute='_compute_summary', store=True)
-    matched_lines   = fields.Integer(string='Matched',    compute='_compute_summary', store=True)
-    mismatch_lines  = fields.Integer(string='Mismatches', compute='_compute_summary', store=True)
-    not_found_lines = fields.Integer(string='Not Found',  compute='_compute_summary', store=True)
-
-    create_date = fields.Datetime(string='Created On', readonly=True)
-    write_date  = fields.Datetime(string='Last Updated', readonly=True)
+    total_lines     = fields.Integer(compute='_compute_summary', store=True)
+    matched_lines   = fields.Integer(compute='_compute_summary', store=True)
+    mismatch_lines  = fields.Integer(compute='_compute_summary', store=True)
+    not_found_lines = fields.Integer(compute='_compute_summary', store=True)
 
     @api.depends('line_ids.hp_found', 'line_ids.name_mismatch', 'line_ids.amount_mismatch')
     def _compute_summary(self):
@@ -103,9 +93,65 @@ class ApReconciliation(models.Model):
 
     def action_load_odoo_data(self):
         self.ensure_one()
-        invoices = self.env['account.move'].search(
-            self._build_domain(), order='name asc', limit=5000
-        )
+
+        # Build date range
+        today = fields.Date.today()
+        from datetime import timedelta
+
+        if self.date_filter == 'today':
+            d_from = d_to = today
+        elif self.date_filter == 'this_week':
+            d_from = today - timedelta(days=today.weekday())
+            d_to   = d_from + timedelta(days=6)
+        elif self.date_filter == 'this_month':
+            d_from = today.replace(day=1)
+            d_to   = today
+        elif self.date_filter == 'this_year':
+            d_from = today.replace(month=1, day=1)
+            d_to   = today
+        elif self.date_filter == 'custom':
+            d_from = self.date_from
+            d_to   = self.date_to
+        else:
+            d_from = d_to = None
+
+        # Search using BOTH invoice_date and date fields
+        # invoice_date is set on invoices, date is set on all moves
+        # We use OR so we catch both cases
+        date_domain = []
+        if d_from and d_to:
+            date_domain = [
+                '|',
+                '&', ('invoice_date', '>=', d_from), ('invoice_date', '<=', d_to),
+                '&', ('invoice_date', '=', False),
+                '&', ('date', '>=', d_from), ('date', '<=', d_to),
+            ]
+        elif d_from:
+            date_domain = [
+                '|',
+                ('invoice_date', '>=', d_from),
+                '&', ('invoice_date', '=', False), ('date', '>=', d_from),
+            ]
+        elif d_to:
+            date_domain = [
+                '|',
+                ('invoice_date', '<=', d_to),
+                '&', ('invoice_date', '=', False), ('date', '<=', d_to),
+            ]
+
+        domain = [
+            ('state', '!=', 'cancel'),
+            ('move_type', 'in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']),
+        ] + date_domain
+
+        if self.journal_ids:
+            domain += [('journal_id', 'in', self.journal_ids.ids)]
+
+        _logger.info('AP Recon domain: %s', domain)
+
+        invoices = self.env['account.move'].search(domain, order='name asc', limit=5000)
+        _logger.info('AP Recon found %d records', len(invoices))
+
         self.line_ids.unlink()
 
         vals_list = []
@@ -114,14 +160,14 @@ class ApReconciliation(models.Model):
                 'reconciliation_id': self.id,
                 'invoice_number':    inv.name,
                 'partner_name':      inv.partner_id.name or '',
-                # use invoice_date for invoices, fall back to date for journal entries
                 'invoice_date':      inv.invoice_date or inv.date,
-                'total_amount':      abs(inv.amount_total),
+                'total_amount':      inv.amount_total,
                 'currency_id':       inv.currency_id.id,
                 'move_id':           inv.id,
                 'status':            inv.state,
                 'payment_state':     inv.payment_state or '',
             })
+
         if vals_list:
             self.env['ap.reconciliation.line'].create(vals_list)
 
@@ -263,11 +309,7 @@ class ApReconciliation(models.Model):
     def action_reset(self):
         self.ensure_one()
         self.line_ids.unlink()
-        self.write({
-            'state':         'draft',
-            'excel_file':    False,
-            'excel_filename': False,
-        })
+        self.write({'state': 'draft', 'excel_file': False, 'excel_filename': False})
         return self._reload()
 
     def _reload(self):
@@ -279,44 +321,8 @@ class ApReconciliation(models.Model):
             'target':    'current',
         }
 
-    def _build_domain(self):
-        # Include all posted moves (invoices + journal entries)
-        domain = [('state', '=', 'posted')]
-        today = fields.Date.today()
-        from datetime import timedelta
-
-        if self.date_filter == 'today':
-            date_domain = [('date', '=', today)]
-        elif self.date_filter == 'this_week':
-            week_start = today - timedelta(days=today.weekday())
-            week_end   = week_start + timedelta(days=6)
-            date_domain = [('date', '>=', week_start), ('date', '<=', week_end)]
-        elif self.date_filter == 'this_month':
-            date_domain = [
-                ('date', '>=', today.replace(day=1)),
-                ('date', '<=', today),
-            ]
-        elif self.date_filter == 'this_year':
-            date_domain = [
-                ('date', '>=', today.replace(month=1, day=1)),
-                ('date', '<=', today),
-            ]
-        elif self.date_filter == 'custom':
-            date_domain = []
-            if self.date_from: date_domain += [('date', '>=', self.date_from)]
-            if self.date_to:   date_domain += [('date', '<=', self.date_to)]
-        else:
-            date_domain = []
-
-        domain += date_domain
-
-        if self.journal_ids:
-            domain += [('journal_id', 'in', self.journal_ids.ids)]
-        return domain
-
 
 class ApReconciliationLine(models.Model):
-    """One line = one Odoo invoice + its matched HesabPay record."""
     _name        = 'ap.reconciliation.line'
     _description = 'AP Reconciliation Line'
     _order       = 'invoice_number asc'
@@ -325,7 +331,6 @@ class ApReconciliationLine(models.Model):
         'ap.reconciliation', ondelete='cascade', required=True
     )
 
-    # Odoo side
     move_id        = fields.Many2one('account.move', ondelete='set null')
     invoice_number = fields.Char(string='Invoice #')
     partner_name   = fields.Char(string='Odoo Customer')
@@ -335,13 +340,11 @@ class ApReconciliationLine(models.Model):
     status         = fields.Char(string='Status')
     payment_state  = fields.Char(string='Payment')
 
-    # HesabPay side
     hp_found        = fields.Boolean(string='In HesabPay', default=False)
     hp_partner_name = fields.Char(string='HP Customer')
     hp_invoice_date = fields.Date(string='HP Date')
     hp_total_amount = fields.Float(string='HP Total', digits=(16, 2))
 
-    # Difference
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
     name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False)
     amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False)
