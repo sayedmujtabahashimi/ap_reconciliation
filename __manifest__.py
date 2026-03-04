@@ -2,21 +2,20 @@
 {
     'name': 'AP Reconciliation',
     'version': '17.0.1.0.0',
-    'category': 'Accounting',
-    'summary': 'Reconcile Afghan Post invoices with HesabPay bank records',
+    'category': 'Afghan Post',
+    'summary': 'Afghan Post Reconciliation — compare invoices with HesabPay records',
     'description': """
 Afghan Post Reconciliation
-=======================
-- Filter invoices: Today / This Week / This Month / This Year / Custom date range
-- Filter by journal (multi-select)
-- Load Odoo invoices into a clean table with one click
-- Upload HesabPay .xlsx file (Number | Customer | Total | Invoice Date)
-- Auto-match by invoice number — red rows for mismatches, yellow for not found
-- Export colour-coded .xlsx report
+==========================
+- AP Reconciliation: load Odoo invoices and compare with HesabPay Excel
+- Manual Reconciliation: compare two Excel files directly
+- Custom security groups (User / Manager)
+- Standalone menu — independent from Accounting module
     """,
     'author': 'Custom',
-    'depends': ['account'],
+    'depends': ['base', 'web', 'account'],
     'data': [
+        'security/groups.xml',
         'views/reconciliation_views.xml',
         'views/manual_reconciliation_views.xml',
         'views/menu_views.xml',

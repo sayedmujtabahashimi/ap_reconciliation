@@ -1,27 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Top-level menu under Accounting -->
+    <!-- ══════════════════════════════════════════════════════════
+         STANDALONE TOP-LEVEL MENU
+         (appears as its own app in the main menu bar)
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem
         id="menu_ap_reconciliation_root"
         name="Afghan Post Reconciliation"
-        parent="account.menu_finance"
-        sequence="99"/>
+        sequence="99"
+        groups="ap_reconciliation.group_ap_reconciliation_user"/>
 
-    <!-- AP Reconciliation submenu -->
+    <!-- AP Reconciliation -->
     <menuitem
         id="menu_ap_reconciliation"
         name="AP Reconciliation"
         parent="menu_ap_reconciliation_root"
         action="action_ap_reconciliation"
-        sequence="10"/>
+        sequence="10"
+        groups="ap_reconciliation.group_ap_reconciliation_user"/>
 
-    <!-- Manual Reconciliation submenu -->
+    <!-- Manual Reconciliation -->
     <menuitem
         id="menu_ap_manual_reconciliation"
         name="Manual Reconciliation"
         parent="menu_ap_reconciliation_root"
         action="action_ap_manual_reconciliation"
-        sequence="20"/>
+        sequence="20"
+        groups="ap_reconciliation.group_ap_reconciliation_user"/>
 
 </odoo>
