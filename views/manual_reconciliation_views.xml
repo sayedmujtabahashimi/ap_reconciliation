@@ -13,25 +13,21 @@
                   decoration-warning="found_in_b == False"
                   decoration-success="found_in_b == True and name_mismatch == False and amount_mismatch == False"
                   create="false" delete="false" edit="false">
-                <!-- Invoice # -->
-                <field name="invoice_number"   string="Invoice #"/>
-                <!-- Afghan Post side -->
-                <field name="a_customer"       string="Afghan Post Customer"/>
-                <field name="a_date"           string="Afghan Post Date"/>
-                <field name="a_total"          string="Afghan Post Total"/>
-                <!-- HesabPay side -->
-                <field name="found_in_b"       string="In HesabPay" widget="boolean_toggle"/>
-                <field name="b_customer"       string="HesabPay Customer"
+                <field name="invoice_number"    string="Invoice #"/>
+                <field name="a_customer"        string="Afghan Post Customer"/>
+                <field name="a_date"            string="Afghan Post Date"/>
+                <field name="a_total"           string="Afghan Post Total"/>
+                <field name="found_in_b"        string="In HesabPay" widget="boolean_toggle"/>
+                <field name="b_customer"        string="HesabPay Customer"
                        decoration-danger="name_mismatch == True"/>
-                <field name="b_date"           string="HesabPay Date"/>
-                <field name="b_total"          string="HesabPay Total"
+                <field name="b_date"            string="HesabPay Date"/>
+                <field name="b_total"           string="HesabPay Total"
                        decoration-danger="amount_mismatch == True"/>
-                <!-- Difference -->
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"
                        decoration-success="amount_mismatch == False and found_in_b == True"/>
-                <field name="name_mismatch"    column_invisible="1"/>
-                <field name="amount_mismatch"  column_invisible="1"/>
+                <field name="name_mismatch"     column_invisible="1"/>
+                <field name="amount_mismatch"   column_invisible="1"/>
             </tree>
         </field>
     </record>
@@ -47,20 +43,20 @@
             <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
                   decoration-warning="found_in_b == False"
                   create="false" delete="false" edit="false">
-                <field name="invoice_number"   string="Invoice #"/>
-                <field name="a_customer"       string="Afghan Post Customer"/>
-                <field name="a_date"           string="Afghan Post Date"/>
-                <field name="a_total"          string="Afghan Post Total"/>
-                <field name="b_customer"       string="HesabPay Customer"
+                <field name="invoice_number"    string="Invoice #"/>
+                <field name="a_customer"        string="Afghan Post Customer"/>
+                <field name="a_date"            string="Afghan Post Date"/>
+                <field name="a_total"           string="Afghan Post Total"/>
+                <field name="found_in_b"        column_invisible="1"/>
+                <field name="b_customer"        string="HesabPay Customer"
                        decoration-danger="name_mismatch == True"/>
-                <field name="b_date"           string="HesabPay Date"/>
-                <field name="b_total"          string="HesabPay Total"
+                <field name="b_date"            string="HesabPay Date"/>
+                <field name="b_total"           string="HesabPay Total"
                        decoration-danger="amount_mismatch == True"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="found_in_b"       column_invisible="1"/>
-                <field name="name_mismatch"    column_invisible="1"/>
-                <field name="amount_mismatch"  column_invisible="1"/>
+                <field name="name_mismatch"     column_invisible="1"/>
+                <field name="amount_mismatch"   column_invisible="1"/>
             </tree>
         </field>
     </record>

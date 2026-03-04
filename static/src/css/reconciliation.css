@@ -113,8 +113,8 @@
 }
 
 /* Separator visual between Odoo and HP columns */
-.o_ap_reconciliation thead th:nth-child(8),
-.o_ap_reconciliation tbody td:nth-child(8) {
+.o_ap_reconciliation thead th:nth-child(6),
+.o_ap_reconciliation tbody td:nth-child(6) {
     border-left: 3px solid #4a72f5 !important;
 }
 
