@@ -129,8 +129,8 @@
                             <field name="journal_ids" widget="many2many_tags"
                                    options="{'no_create': True}"
                                    placeholder="All journals (leave empty for all)"/>
-                            <field name="invoice_number_filter"
-                                   placeholder="e.g. mofa, MOhe, 260101 (leave empty for all)"/>
+<!--                            <field name="invoice_number_filter"-->
+<!--                                   placeholder="e.g. mofa, MOhe, 260101 (leave empty for all)"/>-->
                         </group>
                     </group>
 

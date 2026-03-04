@@ -8,12 +8,20 @@
         parent="account.menu_finance"
         sequence="99"/>
 
-    <!-- Sub-menu item -->
+    <!-- AP Reconciliation submenu -->
     <menuitem
         id="menu_ap_reconciliation"
-        name="Reconciliation"
+        name="AP Reconciliation"
         parent="menu_ap_reconciliation_root"
         action="action_ap_reconciliation"
         sequence="10"/>
+
+    <!-- Manual Reconciliation submenu -->
+    <menuitem
+        id="menu_ap_manual_reconciliation"
+        name="Manual Reconciliation"
+        parent="menu_ap_reconciliation_root"
+        action="action_ap_manual_reconciliation"
+        sequence="20"/>
 
 </odoo>

@@ -18,6 +18,7 @@ Afghan Post Reconciliation
     'depends': ['account'],
     'data': [
         'views/reconciliation_views.xml',
+        'views/manual_reconciliation_views.xml',
         'views/menu_views.xml',
         'security/ir.model.access.csv',
     ],
