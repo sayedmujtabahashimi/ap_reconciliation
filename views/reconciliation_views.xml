@@ -150,12 +150,12 @@
                                    string="Upload HesabPay Excel (.xlsx)"/>
                             <field name="excel_filename" invisible="1"/>
                         </group>
-                        <group>
-                            <div class="o_recon_hint">
-                                <i class="fa fa-info-circle"/> Expected columns:
-                                <strong>Number | Customer | Total | Invoice Date</strong>
-                            </div>
-                        </group>
+<!--                        <group>-->
+<!--                            <div class="o_recon_hint">-->
+<!--                                <i class="fa fa-info-circle"/> Expected columns:-->
+<!--                                <strong>Number | Customer | Total | Invoice Date</strong>-->
+<!--                            </div>-->
+<!--                        </group>-->
                     </group>
 
                     <div class="o_recon_action_row" invisible="state == 'draft'">
