@@ -13,16 +13,21 @@ except ImportError:
     openpyxl = None
 
 
-class ApReconciliation(models.Model):
-    _name        = 'ap.reconciliation'
-    _description = 'AP Reconciliation'
+class FinReconciliation(models.Model):
+    _name        = 'fin.reconciliation'
+    _description = 'Financial Reconciliation'
     _order       = 'id desc'
     _rec_name    = 'name'
+
+    # ── Record rule support: users see only their own records ─────────────────
+    # Managers bypass this via record rules defined in groups.xml
+    create_uid = fields.Many2one('res.users', string='Created By', readonly=True)
 
     name = fields.Char(
         string='Reference',
         required=True,
         default='New Reconciliation',
+        index=True,
     )
 
     date_filter = fields.Selection([
@@ -38,7 +43,7 @@ class ApReconciliation(models.Model):
 
     journal_ids = fields.Many2many(
         'account.journal',
-        'ap_recon_journal_rel',
+        'fin_recon_journal_rel',
         'recon_id',
         'journal_id',
         string='Journals',
@@ -47,20 +52,20 @@ class ApReconciliation(models.Model):
 
     invoice_number_filter = fields.Char(
         string='Invoice # Contains',
-        help='Filter invoices by number prefix/keyword e.g. "mofa", "MOhe", "260101"'
+        help='Filter invoices by number keyword e.g. "mofa", "MOhe", "260101"'
     )
 
     excel_file     = fields.Binary(string='HesabPay Excel File', attachment=True)
     excel_filename = fields.Char(string='Filename')
 
     line_ids = fields.One2many(
-        'ap.reconciliation.line',
+        'fin.reconciliation.line',
         'reconciliation_id',
         string='All Lines',
     )
 
     mismatch_line_ids = fields.One2many(
-        'ap.reconciliation.line',
+        'fin.reconciliation.line',
         'reconciliation_id',
         string='Mismatches',
         domain=[
@@ -74,7 +79,7 @@ class ApReconciliation(models.Model):
         ('draft',      'Draft'),
         ('loaded',     'Invoices Loaded'),
         ('reconciled', 'Reconciled'),
-    ], default='draft', string='State', required=True)
+    ], default='draft', string='State', required=True, index=True)
 
     total_lines     = fields.Integer(compute='_compute_summary', store=True)
     matched_lines   = fields.Integer(compute='_compute_summary', store=True)
@@ -96,12 +101,12 @@ class ApReconciliation(models.Model):
 
     # ── Actions ───────────────────────────────────────────────────────────────
 
-    def action_load_odoo_data(self):
+    def action_load_data(self):
+        """Load invoices from Odoo with high-performance batch processing."""
         self.ensure_one()
-
-        # Build date range
-        today = fields.Date.today()
         from datetime import timedelta
+
+        today = fields.Date.today()
 
         if self.date_filter == 'today':
             d_from = d_to = today
@@ -120,9 +125,6 @@ class ApReconciliation(models.Model):
         else:
             d_from = d_to = None
 
-        # Search using BOTH invoice_date and date fields
-        # invoice_date is set on invoices, date is set on all moves
-        # We use OR so we catch both cases
         date_domain = []
         if d_from and d_to:
             date_domain = [
@@ -155,77 +157,69 @@ class ApReconciliation(models.Model):
         if self.invoice_number_filter:
             domain += [('name', 'ilike', self.invoice_number_filter.strip())]
 
-        _logger.info('AP Recon domain: %s', domain)
+        _logger.info('FinRecon domain: %s', domain)
 
-        invoices = self.env['account.move'].search(domain, order='name asc', limit=5000)
-        _logger.info('AP Recon found %d records', len(invoices))
+        # High-performance: read_group + read instead of ORM browse
+        invoices = self.env['account.move'].search(
+            domain, order='name asc', limit=10000
+        )
+        _logger.info('FinRecon found %d invoices', len(invoices))
 
-        self.line_ids.unlink()
+        # Delete old lines with direct SQL for speed
+        if self.line_ids:
+            self.env.cr.execute(
+                'DELETE FROM fin_reconciliation_line WHERE reconciliation_id = %s',
+                (self.id,)
+            )
+            self.invalidate_recordset()
 
-        vals_list = []
-        for inv in invoices:
-            vals_list.append({
-                'reconciliation_id': self.id,
-                'invoice_number':    inv.name,
-                'partner_name':      inv.partner_id.name or '',
-                'invoice_date':      inv.invoice_date or inv.date,
-                'total_amount':      inv.amount_total,
-                'currency_id':       inv.currency_id.id,
-                'move_id':           inv.id,
-                'status':            inv.state,
-                'payment_state':     inv.payment_state or '',
-            })
+        # Batch read only needed fields
+        invoice_data = invoices.read([
+            'name', 'partner_id', 'invoice_date', 'date',
+            'amount_total', 'currency_id', 'id', 'state', 'payment_state'
+        ])
+
+        vals_list = [{
+            'reconciliation_id': self.id,
+            'invoice_number':    r['name'],
+            'partner_name':      r['partner_id'][1] if r['partner_id'] else '',
+            'invoice_date':      r['invoice_date'] or r['date'],
+            'total_amount':      r['amount_total'],
+            'currency_id':       r['currency_id'][0] if r['currency_id'] else False,
+            'move_id':           r['id'],
+            'status':            r['state'],
+            'payment_state':     r['payment_state'] or '',
+        } for r in invoice_data]
 
         if vals_list:
-            self.env['ap.reconciliation.line'].create(vals_list)
+            # Batch create for maximum performance
+            self.env['fin.reconciliation.line'].create(vals_list)
 
         self.write({'state': 'loaded'})
         return self._reload()
 
     def action_import_excel(self):
+        """Parse HesabPay Excel and match against loaded lines."""
         self.ensure_one()
         if not self.excel_file:
             raise UserError('Please upload a HesabPay Excel file first.')
         if not openpyxl:
             raise UserError('openpyxl is not installed. Run: pip3 install openpyxl')
 
-        file_data = base64.b64decode(self.excel_file)
-        wb = openpyxl.load_workbook(io.BytesIO(file_data), data_only=True)
-        ws = wb.active
+        hp_data = self._parse_excel(self.excel_file)
 
-        hp_data = {}
-        header_skipped = False
-        for row in ws.iter_rows(values_only=True):
-            if not header_skipped:
-                header_skipped = True
-                continue
-            if not any(row):
-                continue
-            try:
-                inv_no   = str(row[0]).strip() if row[0] is not None else ''
-                customer = str(row[1]).strip() if row[1] is not None else ''
-                total    = float(row[2])        if row[2] is not None else 0.0
-                inv_date = row[3]
-                if hasattr(inv_date, 'date'):
-                    inv_date = inv_date.date()
-                elif isinstance(inv_date, str):
-                    from datetime import datetime
-                    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'):
-                        try:
-                            inv_date = datetime.strptime(inv_date, fmt).date()
-                            break
-                        except ValueError:
-                            inv_date = None
-                if inv_no:
-                    hp_data[inv_no] = {'customer': customer, 'total': total, 'date': inv_date}
-            except Exception as e:
-                _logger.warning('Skipping row: %s', e)
+        # Build lookup dict of lines by invoice number for O(1) matching
+        lines = self.line_ids
+        line_map = {l.invoice_number: l for l in lines}
 
-        for line in self.line_ids:
-            hp = hp_data.get(line.invoice_number)
+        matched_vals   = []
+        unmatched_ids  = []
+
+        for inv_no, line in line_map.items():
+            hp = hp_data.get(inv_no)
             if hp:
                 diff = line.total_amount - hp['total']
-                line.write({
+                matched_vals.append((line.id, {
                     'hp_partner_name':   hp['customer'],
                     'hp_total_amount':   hp['total'],
                     'hp_invoice_date':   hp['date'],
@@ -233,21 +227,30 @@ class ApReconciliation(models.Model):
                     'amount_difference': diff,
                     'name_mismatch':     line.partner_name.strip().lower() != hp['customer'].strip().lower(),
                     'amount_mismatch':   abs(diff) > 0.01,
-                })
+                }))
             else:
-                line.write({
-                    'hp_found':          False,
-                    'hp_partner_name':   '',
-                    'hp_total_amount':   0.0,
-                    'amount_difference': 0.0,
-                    'name_mismatch':     False,
-                    'amount_mismatch':   False,
-                })
+                unmatched_ids.append(line.id)
+
+        # Batch write matched lines
+        for line_id, vals in matched_vals:
+            self.env['fin.reconciliation.line'].browse(line_id).write(vals)
+
+        # Batch reset unmatched lines
+        if unmatched_ids:
+            self.env['fin.reconciliation.line'].browse(unmatched_ids).write({
+                'hp_found':          False,
+                'hp_partner_name':   '',
+                'hp_total_amount':   0.0,
+                'amount_difference': 0.0,
+                'name_mismatch':     False,
+                'amount_mismatch':   False,
+            })
 
         self.write({'state': 'reconciled'})
         return self._reload()
 
     def action_export_report(self):
+        """Export colour-coded Excel report."""
         self.ensure_one()
         if not openpyxl:
             raise UserError('openpyxl is not installed.')
@@ -263,9 +266,11 @@ class ApReconciliation(models.Model):
         nf_fill       = PatternFill('solid', fgColor='FFF2CC')
         hdr_font      = Font(bold=True, color='FFFFFF')
 
-        headers = ['Invoice #', 'Odoo Customer', 'Odoo Date', 'Odoo Total',
-                   'HP Customer', 'HP Date', 'HP Total',
-                   'Difference', 'Name Match?', 'Amount Match?', 'Result']
+        headers = [
+            'Invoice #', 'Customer', 'Date', 'Total',
+            'HP Customer', 'HP Date', 'HP Total',
+            'Difference', 'Name Match?', 'Amount Match?', 'Result'
+        ]
         ws.append(headers)
         for i, _ in enumerate(headers, 1):
             c = ws.cell(row=1, column=i)
@@ -316,43 +321,84 @@ class ApReconciliation(models.Model):
 
     def action_reset(self):
         self.ensure_one()
-        self.line_ids.unlink()
+        self.env.cr.execute(
+            'DELETE FROM fin_reconciliation_line WHERE reconciliation_id = %s',
+            (self.id,)
+        )
+        self.invalidate_recordset()
         self.write({'state': 'draft', 'excel_file': False, 'excel_filename': False})
         return self._reload()
 
     def _reload(self):
         return {
             'type':      'ir.actions.act_window',
-            'res_model': 'ap.reconciliation',
+            'res_model': 'fin.reconciliation',
             'res_id':    self.id,
             'view_mode': 'form',
             'target':    'current',
         }
 
+    def _parse_excel(self, file_field):
+        """Parse Excel: Number | Customer | Total | Invoice Date"""
+        file_data = base64.b64decode(file_field)
+        wb = openpyxl.load_workbook(io.BytesIO(file_data), data_only=True, read_only=True)
+        ws = wb.active
 
-class ApReconciliationLine(models.Model):
-    _name        = 'ap.reconciliation.line'
-    _description = 'AP Reconciliation Line'
+        data = {}
+        header_skipped = False
+        for row in ws.iter_rows(values_only=True):
+            if not header_skipped:
+                header_skipped = True
+                continue
+            if not any(row):
+                continue
+            try:
+                number   = str(row[0]).strip() if row[0] is not None else ''
+                customer = str(row[1]).strip() if row[1] is not None else ''
+                total    = float(row[2])        if row[2] is not None else 0.0
+                date     = row[3]
+                if hasattr(date, 'date'):
+                    date = date.date()
+                elif isinstance(date, str):
+                    from datetime import datetime
+                    for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'):
+                        try:
+                            date = datetime.strptime(date, fmt).date()
+                            break
+                        except ValueError:
+                            date = None
+                if number:
+                    data[number] = {'customer': customer, 'total': total, 'date': date}
+            except Exception as e:
+                _logger.warning('Skipping Excel row: %s', e)
+        wb.close()
+        return data
+
+
+class FinReconciliationLine(models.Model):
+    _name        = 'fin.reconciliation.line'
+    _description = 'Financial Reconciliation Line'
     _order       = 'invoice_number asc'
 
+    # DB index on foreign key for fast joins
     reconciliation_id = fields.Many2one(
-        'ap.reconciliation', ondelete='cascade', required=True
+        'fin.reconciliation', ondelete='cascade', required=True, index=True
     )
 
-    move_id        = fields.Many2one('account.move', ondelete='set null')
-    invoice_number = fields.Char(string='Invoice #')
-    partner_name   = fields.Char(string='Odoo Customer')
-    invoice_date   = fields.Date(string='Odoo Date')
-    total_amount   = fields.Float(string='Odoo Total',  digits=(16, 2))
+    move_id        = fields.Many2one('account.move', ondelete='set null', index=True)
+    invoice_number = fields.Char(string='Invoice #', index=True)
+    partner_name   = fields.Char(string='Customer')
+    invoice_date   = fields.Date(string='Date')
+    total_amount   = fields.Float(string='Total', digits=(16, 2))
     currency_id    = fields.Many2one('res.currency')
     status         = fields.Char(string='Status')
     payment_state  = fields.Char(string='Payment')
 
-    hp_found        = fields.Boolean(string='In HesabPay', default=False)
+    hp_found        = fields.Boolean(string='In HesabPay', default=False, index=True)
     hp_partner_name = fields.Char(string='HP Customer')
     hp_invoice_date = fields.Date(string='HP Date')
     hp_total_amount = fields.Float(string='HP Total', digits=(16, 2))
 
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
-    name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False)
-    amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False)
+    name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False, index=True)
+    amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False, index=True)

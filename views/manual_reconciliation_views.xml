@@ -2,26 +2,26 @@
 <odoo>
 
     <!-- ══════════════════════════════════════════════════════════
-         STANDALONE TREE VIEW — All Lines
+         STANDALONE TREE — All Lines
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_manual_recon_line_all" model="ir.ui.view">
-        <field name="name">ap.manual.reconciliation.line.tree.all</field>
-        <field name="model">ap.manual.reconciliation.line</field>
+    <record id="view_fin_manual_recon_line_all" model="ir.ui.view">
+        <field name="name">fin.manual.reconciliation.line.tree.all</field>
+        <field name="model">fin.manual.reconciliation.line</field>
         <field name="arch" type="xml">
             <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
                   decoration-warning="found_in_b == False"
                   decoration-success="found_in_b == True and name_mismatch == False and amount_mismatch == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
-                <field name="a_customer"        string="Afghan Post Customer"/>
-                <field name="a_date"            string="Afghan Post Date"/>
-                <field name="a_total"           string="Afghan Post Total"/>
+                <field name="a_customer"        string="Customer"/>
+                <field name="a_date"            string="Date"/>
+                <field name="a_total"           string="Total"/>
                 <field name="found_in_b"        string="In HesabPay" widget="boolean_toggle"/>
-                <field name="b_customer"        string="HesabPay Customer"
+                <field name="b_customer"        string="HP Customer"
                        decoration-danger="name_mismatch == True"/>
-                <field name="b_date"            string="HesabPay Date"/>
-                <field name="b_total"           string="HesabPay Total"
+                <field name="b_date"            string="HP Date"/>
+                <field name="b_total"           string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"
@@ -33,25 +33,25 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════
-         STANDALONE TREE VIEW — Mismatches Only
+         STANDALONE TREE — Mismatches Only
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_manual_recon_line_mismatch" model="ir.ui.view">
-        <field name="name">ap.manual.reconciliation.line.tree.mismatch</field>
-        <field name="model">ap.manual.reconciliation.line</field>
+    <record id="view_fin_manual_recon_line_mismatch" model="ir.ui.view">
+        <field name="name">fin.manual.reconciliation.line.tree.mismatch</field>
+        <field name="model">fin.manual.reconciliation.line</field>
         <field name="arch" type="xml">
             <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
                   decoration-warning="found_in_b == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
-                <field name="a_customer"        string="Afghan Post Customer"/>
-                <field name="a_date"            string="Afghan Post Date"/>
-                <field name="a_total"           string="Afghan Post Total"/>
+                <field name="a_customer"        string="Customer"/>
+                <field name="a_date"            string="Date"/>
+                <field name="a_total"           string="Total"/>
                 <field name="found_in_b"        column_invisible="1"/>
-                <field name="b_customer"        string="HesabPay Customer"
+                <field name="b_customer"        string="HP Customer"
                        decoration-danger="name_mismatch == True"/>
-                <field name="b_date"            string="HesabPay Date"/>
-                <field name="b_total"           string="HesabPay Total"
+                <field name="b_date"            string="HP Date"/>
+                <field name="b_total"           string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"/>
@@ -65,17 +65,27 @@
          FORM VIEW
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_ap_manual_reconciliation_form" model="ir.ui.view">
-        <field name="name">ap.manual.reconciliation.form</field>
-        <field name="model">ap.manual.reconciliation</field>
+    <record id="view_fin_manual_reconciliation_form" model="ir.ui.view">
+        <field name="name">fin.manual.reconciliation.form</field>
+        <field name="model">fin.manual.reconciliation</field>
         <field name="arch" type="xml">
             <form string="Manual Reconciliation" class="o_ap_reconciliation">
 
                 <header>
+                    <!-- Primary action buttons in header -->
+                    <button name="action_compare"
+                            string="Compare Files"
+                            type="object"
+                            class="btn-primary"/>
+                    <button name="action_export_report"
+                            string="Export Report"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state != 'reconciled'"/>
                     <button name="action_reset"
                             string="Reset"
                             type="object"
-                            class="btn btn-secondary"
+                            class="btn-secondary"
                             invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,reconciled"/>
@@ -87,6 +97,10 @@
                         <h1>
                             <field name="name" placeholder="e.g. December 2025 Manual Reconciliation"/>
                         </h1>
+                        <div class="o_recon_meta" invisible="state == 'draft'">
+                            <span>Created by: <field name="create_uid" readonly="1"/></span>
+                            <span style="margin-left:16px;">Created: <field name="create_date" readonly="1"/></span>
+                        </div>
                     </div>
 
                     <!-- Summary badges -->
@@ -105,40 +119,27 @@
                         </span>
                     </div>
 
-                    <!-- FILE UPLOADS — Afghan Post on left, HesabPay on right -->
+                    <!-- FILE UPLOADS -->
                     <group string="Step 1 — Upload Files">
                         <group string="Afghan Post File">
                             <field name="file_a" widget="binary"
                                    filename="file_a_name"
                                    string="Upload Afghan Post File (.xlsx)"/>
-                            <field name="file_a_name" invisible="1"/>
+                            <field name="file_a_name"  invisible="1"/>
                             <field name="file_a_label" invisible="1"/>
                         </group>
                         <group string="HesabPay File">
                             <field name="file_b" widget="binary"
                                    filename="file_b_name"
                                    string="Upload HesabPay File (.xlsx)"/>
-                            <field name="file_b_name" invisible="1"/>
+                            <field name="file_b_name"  invisible="1"/>
                             <field name="file_b_label" invisible="1"/>
                         </group>
                     </group>
 
                     <div class="o_recon_hint" style="margin: 8px 16px 16px 16px;">
-                        <i class="fa fa-info-circle"/> Both files must use the same format:
+                        <i class="fa fa-info-circle"/> Both files must use the format:
                         <strong>Number | Customer | Total | Invoice Date</strong>
-                        (row 1 = headers, data from row 2)
-                    </div>
-
-                    <div class="o_recon_action_row">
-                        <button name="action_compare"
-                                string="📥  Compare Files"
-                                type="object"
-                                class="btn btn-warning btn-lg o_recon_btn"/>
-                        <button name="action_export_report"
-                                string="📊  Export Report"
-                                type="object"
-                                class="btn btn-success btn-lg o_recon_btn"
-                                invisible="state != 'reconciled'"/>
                     </div>
 
                     <!-- LEGEND -->
@@ -153,13 +154,13 @@
                             <field name="line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   context="{'list_view_ref': 'ap_reconciliation.view_manual_recon_line_all'}"/>
+                                   context="{'list_view_ref': 'ap_reconciliation.view_fin_manual_recon_line_all'}"/>
                         </page>
                         <page string="Mismatches Only">
                             <field name="mismatch_line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   context="{'list_view_ref': 'ap_reconciliation.view_manual_recon_line_mismatch'}"/>
+                                   context="{'list_view_ref': 'ap_reconciliation.view_fin_manual_recon_line_mismatch'}"/>
                         </page>
                     </notebook>
 
@@ -172,12 +173,13 @@
          LIST VIEW
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_ap_manual_reconciliation_list" model="ir.ui.view">
-        <field name="name">ap.manual.reconciliation.list</field>
-        <field name="model">ap.manual.reconciliation</field>
+    <record id="view_fin_manual_reconciliation_list" model="ir.ui.view">
+        <field name="name">fin.manual.reconciliation.list</field>
+        <field name="model">fin.manual.reconciliation</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="name"            string="Reference"/>
+                <field name="create_uid"      string="Created By"/>
                 <field name="total_lines"     string="Total"/>
                 <field name="matched_lines"   string="Matched"/>
                 <field name="mismatch_lines"  string="Mismatches"/>
@@ -189,15 +191,41 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════
+         RECORD RULES
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="rule_fin_manual_recon_user_own" model="ir.rule">
+        <field name="name">Manual Reconciliation: Users see own records</field>
+        <field name="model_id" ref="model_fin_manual_reconciliation"/>
+        <field name="domain_force">[('create_uid','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('ap_reconciliation.group_fin_recon_user'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_fin_manual_recon_manager_all" model="ir.rule">
+        <field name="name">Manual Reconciliation: Managers see all records</field>
+        <field name="model_id" ref="model_fin_manual_reconciliation"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+        <field name="groups" eval="[(4, ref('ap_reconciliation.group_fin_recon_manager'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
          WINDOW ACTION
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="action_ap_manual_reconciliation" model="ir.actions.act_window">
+    <record id="action_fin_manual_reconciliation" model="ir.actions.act_window">
         <field name="name">Manual Reconciliation</field>
-        <field name="res_model">ap.manual.reconciliation</field>
+        <field name="res_model">fin.manual.reconciliation</field>
         <field name="view_mode">tree,form</field>
         <field name="target">current</field>
-        <field name="groups_id" eval="[(4, ref('ap_reconciliation.group_ap_reconciliation_manager'))]"/>
+        <field name="groups_id" eval="[(4, ref('ap_reconciliation.group_fin_recon_user'))]"/>
     </record>
 
 </odoo>

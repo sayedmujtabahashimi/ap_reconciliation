@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'AP Reconciliation',
-    'version': '17.0.1.0.0',
+    'name': 'Financial Reconciliation',
+    'version': '17.0.2.0.0',
     'category': 'Afghan Post',
-    'summary': 'Afghan Post Reconciliation — compare invoices with HesabPay records',
+    'summary': 'Financial Reconciliation — compare invoices with HesabPay records',
     'description': """
-Afghan Post Reconciliation
-==========================
-- AP Reconciliation: load Odoo invoices and compare with HesabPay Excel
+Financial Reconciliation
+========================
+- AP Reconciliation: load invoices and compare with HesabPay Excel
 - Manual Reconciliation: compare two Excel files directly
 - Custom security groups (User / Manager)
+- User sees only own records, cannot delete
+- Manager has full access to all records
+- High-performance loading with batch create and DB indexing
 - Standalone menu — independent from Accounting module
     """,
     'author': 'Custom',

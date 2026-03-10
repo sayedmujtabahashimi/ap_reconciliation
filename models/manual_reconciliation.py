@@ -13,40 +13,41 @@ except ImportError:
     openpyxl = None
 
 
-class ApManualReconciliation(models.Model):
+class FinManualReconciliation(models.Model):
     """
     Manual Reconciliation — compare two Excel files directly.
-    Both files must follow the same template:
-    Number | Customer | Total | Invoice Date
+    Both files must follow: Number | Customer | Total | Invoice Date
     """
-    _name        = 'ap.manual.reconciliation'
-    _description = 'AP Manual Reconciliation'
+    _name        = 'fin.manual.reconciliation'
+    _description = 'Financial Manual Reconciliation'
     _order       = 'id desc'
     _rec_name    = 'name'
 
-    name = fields.Char(string='Reference', required=True, default='New Manual Reconciliation')
+    create_uid = fields.Many2one('res.users', string='Created By', readonly=True)
 
-    # File A — first Excel
-    file_a        = fields.Binary(string='Afghan Post File (Excel)', attachment=True)
-    file_a_name   = fields.Char(string='Afghan Post File Name')
-    file_a_label  = fields.Char(string='File A Label', default='Afghan Post',
-                                 help='Label shown in columns e.g. "Odoo Export"')
+    name = fields.Char(
+        string='Reference', required=True,
+        default='New Manual Reconciliation', index=True
+    )
 
-    # File B — second Excel
-    file_b        = fields.Binary(string='HesabPay File (Excel)', attachment=True)
-    file_b_name   = fields.Char(string='HesabPay File Name')
-    file_b_label  = fields.Char(string='File B Label', default='HesabPay',
-                                 help='Label shown in columns e.g. "HesabPay"')
+    file_a       = fields.Binary(string='Afghan Post File (Excel)', attachment=True)
+    file_a_name  = fields.Char(string='Afghan Post File Name')
+    file_a_label = fields.Char(string='File A Label', default='Afghan Post')
+
+    file_b       = fields.Binary(string='HesabPay File (Excel)', attachment=True)
+    file_b_name  = fields.Char(string='HesabPay File Name')
+    file_b_label = fields.Char(string='File B Label', default='HesabPay')
 
     state = fields.Selection([
         ('draft',      'Draft'),
         ('reconciled', 'Reconciled'),
-    ], default='draft', required=True)
+    ], default='draft', required=True, index=True)
 
-    # Lines
-    line_ids = fields.One2many('ap.manual.reconciliation.line', 'reconciliation_id', string='All Lines')
+    line_ids = fields.One2many(
+        'fin.manual.reconciliation.line', 'reconciliation_id', string='All Lines'
+    )
     mismatch_line_ids = fields.One2many(
-        'ap.manual.reconciliation.line', 'reconciliation_id',
+        'fin.manual.reconciliation.line', 'reconciliation_id',
         string='Mismatches',
         domain=[
             '|', ('name_mismatch', '=', True),
@@ -55,7 +56,6 @@ class ApManualReconciliation(models.Model):
         ],
     )
 
-    # Summary
     total_lines     = fields.Integer(compute='_compute_summary', store=True)
     matched_lines   = fields.Integer(compute='_compute_summary', store=True)
     mismatch_lines  = fields.Integer(compute='_compute_summary', store=True)
@@ -79,16 +79,21 @@ class ApManualReconciliation(models.Model):
     def action_compare(self):
         self.ensure_one()
         if not self.file_a:
-            raise UserError('Please upload File A.')
+            raise UserError('Please upload the Afghan Post file.')
         if not self.file_b:
-            raise UserError('Please upload File B.')
+            raise UserError('Please upload the HesabPay file.')
         if not openpyxl:
             raise UserError('openpyxl is not installed. Run: pip3 install openpyxl')
 
         data_a = self._parse_excel(self.file_a)
         data_b = self._parse_excel(self.file_b)
 
-        self.line_ids.unlink()
+        # Fast delete via SQL
+        self.env.cr.execute(
+            'DELETE FROM fin_manual_reconciliation_line WHERE reconciliation_id = %s',
+            (self.id,)
+        )
+        self.invalidate_recordset()
 
         vals_list = []
         for number, row_a in data_a.items():
@@ -126,7 +131,7 @@ class ApManualReconciliation(models.Model):
                 })
 
         if vals_list:
-            self.env['ap.manual.reconciliation.line'].create(vals_list)
+            self.env['fin.manual.reconciliation.line'].create(vals_list)
 
         self.write({'state': 'reconciled'})
         return self._reload()
@@ -147,8 +152,8 @@ class ApManualReconciliation(models.Model):
         nf_fill       = PatternFill('solid', fgColor='FFF2CC')
         hdr_font      = Font(bold=True, color='FFFFFF')
 
-        label_a = self.file_a_label or 'File A'
-        label_b = self.file_b_label or 'File B'
+        label_a = self.file_a_label or 'Afghan Post'
+        label_b = self.file_b_label or 'HesabPay'
 
         headers = [
             'Invoice #',
@@ -206,7 +211,11 @@ class ApManualReconciliation(models.Model):
 
     def action_reset(self):
         self.ensure_one()
-        self.line_ids.unlink()
+        self.env.cr.execute(
+            'DELETE FROM fin_manual_reconciliation_line WHERE reconciliation_id = %s',
+            (self.id,)
+        )
+        self.invalidate_recordset()
         self.write({
             'state':       'draft',
             'file_a':      False,
@@ -219,18 +228,19 @@ class ApManualReconciliation(models.Model):
     def _reload(self):
         return {
             'type':      'ir.actions.act_window',
-            'res_model': 'ap.manual.reconciliation',
+            'res_model': 'fin.manual.reconciliation',
             'res_id':    self.id,
             'view_mode': 'form',
             'target':    'current',
         }
 
     def _parse_excel(self, file_field):
-        """Parse an Excel file with columns: Number | Customer | Total | Invoice Date"""
+        """Parse Excel with read_only mode for maximum speed."""
         file_data = base64.b64decode(file_field)
-        wb = openpyxl.load_workbook(io.BytesIO(file_data), data_only=True)
+        wb = openpyxl.load_workbook(
+            io.BytesIO(file_data), data_only=True, read_only=True
+        )
         ws = wb.active
-
         data = {}
         header_skipped = False
         for row in ws.iter_rows(values_only=True):
@@ -257,31 +267,31 @@ class ApManualReconciliation(models.Model):
                 if number:
                     data[number] = {'customer': customer, 'total': total, 'date': date}
             except Exception as e:
-                _logger.warning('Skipping row: %s', e)
+                _logger.warning('Skipping Excel row: %s', e)
+        wb.close()
         return data
 
 
-class ApManualReconciliationLine(models.Model):
-    _name        = 'ap.manual.reconciliation.line'
-    _description = 'AP Manual Reconciliation Line'
+class FinManualReconciliationLine(models.Model):
+    _name        = 'fin.manual.reconciliation.line'
+    _description = 'Financial Manual Reconciliation Line'
     _order       = 'invoice_number asc'
 
-    reconciliation_id = fields.Many2one('ap.manual.reconciliation', ondelete='cascade', required=True)
+    reconciliation_id = fields.Many2one(
+        'fin.manual.reconciliation', ondelete='cascade', required=True, index=True
+    )
 
-    invoice_number = fields.Char(string='Invoice #')
+    invoice_number = fields.Char(string='Invoice #', index=True)
 
-    # File A side
-    a_customer = fields.Char(string='AP Customer')
-    a_date     = fields.Date(string='AP Date')
-    a_total    = fields.Float(string='AP Total', digits=(16, 2))
+    a_customer = fields.Char(string='Customer')
+    a_date     = fields.Date(string='Date')
+    a_total    = fields.Float(string='Total', digits=(16, 2))
 
-    # File B side
-    found_in_b = fields.Boolean(string='Found in HesabPay', default=False)
+    found_in_b = fields.Boolean(string='In HesabPay', default=False, index=True)
     b_customer = fields.Char(string='HP Customer')
     b_date     = fields.Date(string='HP Date')
     b_total    = fields.Float(string='HP Total', digits=(16, 2))
 
-    # Difference
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
-    name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False)
-    amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False)
+    name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False, index=True)
+    amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False, index=True)

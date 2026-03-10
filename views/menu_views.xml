@@ -1,33 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ══════════════════════════════════════════════════════════
-         STANDALONE TOP-LEVEL MENU
-         (appears as its own app in the main menu bar)
-    ══════════════════════════════════════════════════════════ -->
-
+    <!-- Standalone top-level app menu -->
     <menuitem
-        id="menu_ap_reconciliation_root"
-        name="Afghan Post Reconciliation"
+        id="menu_fin_reconciliation_root"
+        name="Financial Reconciliation"
         sequence="99"
-        groups="ap_reconciliation.group_ap_reconciliation_manager"/>
+        groups="ap_reconciliation.group_fin_recon_user"/>
 
-    <!-- AP Reconciliation -->
     <menuitem
-        id="menu_ap_reconciliation"
+        id="menu_fin_reconciliation"
         name="AP Reconciliation"
-        parent="menu_ap_reconciliation_root"
-        action="action_ap_reconciliation"
+        parent="menu_fin_reconciliation_root"
+        action="action_fin_reconciliation"
         sequence="10"
-        groups="ap_reconciliation.group_ap_reconciliation_manager"/>
+        groups="ap_reconciliation.group_fin_recon_user"/>
 
-    <!-- Manual Reconciliation -->
     <menuitem
-        id="menu_ap_manual_reconciliation"
+        id="menu_fin_manual_reconciliation"
         name="Manual Reconciliation"
-        parent="menu_ap_reconciliation_root"
-        action="action_ap_manual_reconciliation"
+        parent="menu_fin_reconciliation_root"
+        action="action_fin_manual_reconciliation"
         sequence="20"
-        groups="ap_reconciliation.group_ap_reconciliation_manager"/>
+        groups="ap_reconciliation.group_fin_recon_user"/>
 
 </odoo>

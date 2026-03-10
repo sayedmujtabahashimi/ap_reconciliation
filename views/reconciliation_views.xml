@@ -2,21 +2,21 @@
 <odoo>
 
     <!-- ══════════════════════════════════════════════════════════
-         STANDALONE TREE VIEWS FOR LINE MODEL
+         STANDALONE TREE — All Lines
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_recon_line_list_all" model="ir.ui.view">
-        <field name="name">ap.reconciliation.line.tree.all</field>
-        <field name="model">ap.reconciliation.line</field>
+    <record id="view_fin_recon_line_all" model="ir.ui.view">
+        <field name="name">fin.reconciliation.line.tree.all</field>
+        <field name="model">fin.reconciliation.line</field>
         <field name="arch" type="xml">
             <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
                   decoration-warning="hp_found == False"
                   decoration-success="hp_found == True and name_mismatch == False and amount_mismatch == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
-                <field name="partner_name"      string="Odoo Customer"/>
-                <field name="invoice_date"      string="Odoo Date"/>
-                <field name="total_amount"      string="Odoo Total"
+                <field name="partner_name"      string="Customer"/>
+                <field name="invoice_date"      string="Date"/>
+                <field name="total_amount"      string="Total"
                        widget="monetary"
                        options="{'currency_field': 'currency_id'}"/>
                 <field name="currency_id"       column_invisible="1"/>
@@ -28,7 +28,7 @@
                 <field name="hp_invoice_date"   string="HP Date"/>
                 <field name="hp_total_amount"   string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="amount_difference" string="Difference (Afs)"
+                <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"
                        decoration-success="amount_mismatch == False and hp_found == True"/>
                 <field name="name_mismatch"     column_invisible="1"/>
@@ -37,17 +37,21 @@
         </field>
     </record>
 
-    <record id="view_recon_line_list_mismatch" model="ir.ui.view">
-        <field name="name">ap.reconciliation.line.tree.mismatch</field>
-        <field name="model">ap.reconciliation.line</field>
+    <!-- ══════════════════════════════════════════════════════════
+         STANDALONE TREE — Mismatches Only
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_fin_recon_line_mismatch" model="ir.ui.view">
+        <field name="name">fin.reconciliation.line.tree.mismatch</field>
+        <field name="model">fin.reconciliation.line</field>
         <field name="arch" type="xml">
             <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
                   decoration-warning="hp_found == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
-                <field name="partner_name"      string="Odoo Customer"/>
-                <field name="invoice_date"      string="Odoo Date"/>
-                <field name="total_amount"      string="Odoo Total"
+                <field name="partner_name"      string="Customer"/>
+                <field name="invoice_date"      string="Date"/>
+                <field name="total_amount"      string="Total"
                        widget="monetary"
                        options="{'currency_field': 'currency_id'}"/>
                 <field name="currency_id"       column_invisible="1"/>
@@ -69,17 +73,32 @@
          FORM VIEW
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_ap_reconciliation_form" model="ir.ui.view">
-        <field name="name">ap.reconciliation.form</field>
-        <field name="model">ap.reconciliation</field>
+    <record id="view_fin_reconciliation_form" model="ir.ui.view">
+        <field name="name">fin.reconciliation.form</field>
+        <field name="model">fin.reconciliation</field>
         <field name="arch" type="xml">
-            <form string="AP Reconciliation" class="o_ap_reconciliation">
+            <form string="Financial Reconciliation" class="o_ap_reconciliation">
 
                 <header>
+                    <!-- Primary action buttons in header -->
+                    <button name="action_load_data"
+                            string="Load Invoices"
+                            type="object"
+                            class="btn-primary"/>
+                    <button name="action_import_excel"
+                            string="Compare with HesabPay"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state == 'draft'"/>
+                    <button name="action_export_report"
+                            string="Export Report"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state != 'reconciled'"/>
                     <button name="action_reset"
                             string="Reset"
                             type="object"
-                            class="btn btn-secondary"
+                            class="btn-secondary"
                             invisible="state == 'draft'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,loaded,reconciled"/>
@@ -92,8 +111,9 @@
                             <field name="name" placeholder="e.g. January 2026 Reconciliation"/>
                         </h1>
                         <div class="o_recon_meta" invisible="state == 'draft'">
-                            <span>Created: <field name="create_date" readonly="1"/></span>
-                            <span style="margin-left:16px;">Last Updated: <field name="write_date" readonly="1"/></span>
+                            <span>Created by: <field name="create_uid" readonly="1"/></span>
+                            <span style="margin-left:16px;">Created: <field name="create_date" readonly="1"/></span>
+                            <span style="margin-left:16px;">Updated: <field name="write_date" readonly="1"/></span>
                         </div>
                     </div>
 
@@ -113,7 +133,7 @@
                         </span>
                     </div>
 
-                    <!-- STEP 1: FILTERS -->
+                    <!-- FILTERS -->
                     <group string="Step 1 — Filters">
                         <group>
                             <field name="date_filter" widget="radio"
@@ -129,19 +149,12 @@
                             <field name="journal_ids" widget="many2many_tags"
                                    options="{'no_create': True}"
                                    placeholder="All journals (leave empty for all)"/>
-<!--                            <field name="invoice_number_filter"-->
-<!--                                   placeholder="e.g. mofa, MOhe, 260101 (leave empty for all)"/>-->
+                            <field name="invoice_number_filter"
+                                   placeholder="e.g. mofa, MOhe, 260101 (leave empty for all)"/>
                         </group>
                     </group>
 
-                    <div class="o_recon_action_row">
-                        <button name="action_load_odoo_data"
-                                string="🔍  Load Odoo Invoices"
-                                type="object"
-                                class="btn btn-primary btn-lg o_recon_btn"/>
-                    </div>
-
-                    <!-- STEP 2: UPLOAD -->
+                    <!-- UPLOAD -->
                     <group string="Step 2 — Import HesabPay File"
                            invisible="state == 'draft'">
                         <group>
@@ -150,25 +163,7 @@
                                    string="Upload HesabPay Excel (.xlsx)"/>
                             <field name="excel_filename" invisible="1"/>
                         </group>
-<!--                        <group>-->
-<!--                            <div class="o_recon_hint">-->
-<!--                                <i class="fa fa-info-circle"/> Expected columns:-->
-<!--                                <strong>Number | Customer | Total | Invoice Date</strong>-->
-<!--                            </div>-->
-<!--                        </group>-->
                     </group>
-
-                    <div class="o_recon_action_row" invisible="state == 'draft'">
-                        <button name="action_import_excel"
-                                string="📥  Compare with HesabPay"
-                                type="object"
-                                class="btn btn-warning btn-lg o_recon_btn"/>
-                        <button name="action_export_report"
-                                string="📊  Export Report"
-                                type="object"
-                                class="btn btn-success btn-lg o_recon_btn"
-                                invisible="state != 'reconciled'"/>
-                    </div>
 
                     <!-- LEGEND -->
                     <div class="o_recon_legend" invisible="state != 'reconciled'">
@@ -182,13 +177,13 @@
                             <field name="line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   context="{'list_view_ref': 'ap_reconciliation.view_recon_line_list_all'}"/>
+                                   context="{'list_view_ref': 'ap_reconciliation.view_fin_recon_line_all'}"/>
                         </page>
                         <page string="Mismatches Only">
                             <field name="mismatch_line_ids"
                                    readonly="1"
                                    nolabel="1"
-                                   context="{'list_view_ref': 'ap_reconciliation.view_recon_line_list_mismatch'}"/>
+                                   context="{'list_view_ref': 'ap_reconciliation.view_fin_recon_line_mismatch'}"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -197,15 +192,16 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════
-         LIST VIEW — browse all saved reconciliation records
+         LIST VIEW
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_ap_reconciliation_list" model="ir.ui.view">
-        <field name="name">ap.reconciliation.list</field>
-        <field name="model">ap.reconciliation</field>
+    <record id="view_fin_reconciliation_list" model="ir.ui.view">
+        <field name="name">fin.reconciliation.list</field>
+        <field name="model">fin.reconciliation</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="name"            string="Reference"/>
+                <field name="create_uid"      string="Created By"/>
                 <field name="date_filter"     string="Period"/>
                 <field name="date_from"       string="From"/>
                 <field name="date_to"         string="To"/>
@@ -223,12 +219,15 @@
          SEARCH VIEW
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="view_ap_reconciliation_search" model="ir.ui.view">
-        <field name="name">ap.reconciliation.search</field>
-        <field name="model">ap.reconciliation</field>
+    <record id="view_fin_reconciliation_search" model="ir.ui.view">
+        <field name="name">fin.reconciliation.search</field>
+        <field name="model">fin.reconciliation</field>
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
+                <field name="create_uid"/>
+                <filter name="my_records" string="My Records"
+                        domain="[('create_uid','=',uid)]"/>
                 <filter name="reconciled" string="Reconciled"
                         domain="[('state','=','reconciled')]"/>
                 <filter name="loaded" string="Loaded"
@@ -240,16 +239,44 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════
+         RECORD RULES
+    ══════════════════════════════════════════════════════════ -->
+
+    <!-- Users see only their own records -->
+    <record id="rule_fin_recon_user_own" model="ir.rule">
+        <field name="name">Financial Reconciliation: Users see own records</field>
+        <field name="model_id" ref="model_fin_reconciliation"/>
+        <field name="domain_force">[('create_uid','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('ap_reconciliation.group_fin_recon_user'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Managers see all records — no restriction -->
+    <record id="rule_fin_recon_manager_all" model="ir.rule">
+        <field name="name">Financial Reconciliation: Managers see all records</field>
+        <field name="model_id" ref="model_fin_reconciliation"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+        <field name="groups" eval="[(4, ref('ap_reconciliation.group_fin_recon_manager'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
          WINDOW ACTION
     ══════════════════════════════════════════════════════════ -->
 
-    <record id="action_ap_reconciliation" model="ir.actions.act_window">
+    <record id="action_fin_reconciliation" model="ir.actions.act_window">
         <field name="name">AP Reconciliation</field>
-        <field name="res_model">ap.reconciliation</field>
+        <field name="res_model">fin.reconciliation</field>
         <field name="view_mode">tree,form</field>
         <field name="target">current</field>
         <field name="context">{'default_date_filter': 'this_month'}</field>
-        <field name="groups_id" eval="[(4, ref('ap_reconciliation.group_ap_reconciliation_manager'))]"/>
+        <field name="groups_id" eval="[(4, ref('ap_reconciliation.group_fin_recon_user'))]"/>
     </record>
 
 </odoo>
