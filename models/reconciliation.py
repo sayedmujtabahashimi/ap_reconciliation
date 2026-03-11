@@ -50,10 +50,15 @@ class FinReconciliation(models.Model):
         domain=[('type', 'in', ['sale', 'purchase', 'bank', 'cash'])],
     )
 
-    invoice_number_filter = fields.Char(
-        string='Invoice # Contains',
-        help='Filter invoices by number keyword e.g. "mofa", "MOhe", "260101"'
-    )
+    invoice_number_filter = fields.Selection([
+        ('MoFA',     'MoFA'),
+        ('MoFA VIP', 'MoFA VIP'),
+        ('MoHE',     'MoHE'),
+        ('MoHE VIP', 'MoHE VIP'),
+        ('EDOK',     'EDOK'),
+        ('TVETA',    'TVETA'),
+        ('MoE',      'MoE'),
+    ], string='Invoice Prefix', help='Filter invoices by prefix/ministry')
 
     excel_file     = fields.Binary(string='HesabPay Excel File', attachment=True)
     excel_filename = fields.Char(string='Filename')
@@ -155,7 +160,7 @@ class FinReconciliation(models.Model):
             domain += [('journal_id', 'in', self.journal_ids.ids)]
 
         if self.invoice_number_filter:
-            domain += [('name', 'ilike', self.invoice_number_filter.strip())]
+            domain += [('name', 'ilike', self.invoice_number_filter)]
 
         _logger.info('FinRecon domain: %s', domain)
 
