@@ -7,20 +7,39 @@
         <field name="sequence">100</field>
     </record>
 
-    <!-- User: can create and see only their own records, cannot delete -->
+    <!-- ROLE 1: Reconciliation User — AP Reconciliation only, own records, no delete -->
+    <record id="group_recon_officer" model="res.groups">
+        <field name="name">Reconciliation User</field>
+        <field name="category_id" ref="module_financial_reconciliation"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Access to AP Reconciliation only. Own records, no delete.</field>
+    </record>
+
+    <!-- ROLE 2: Manual Reconciliation User — Manual Reconciliation only, own records, no delete -->
+    <record id="group_manual_recon_officer" model="res.groups">
+        <field name="name">Manual Reconciliation User</field>
+        <field name="category_id" ref="module_financial_reconciliation"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Access to Manual Reconciliation only. Own records, no delete.</field>
+    </record>
+
+    <!-- ROLE 3: User — both menus, own records, no delete -->
     <record id="group_fin_recon_user" model="res.groups">
         <field name="name">User</field>
         <field name="category_id" ref="module_financial_reconciliation"/>
-        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-        <field name="comment">Can create reconciliations and view only their own records. Cannot delete.</field>
+        <field name="implied_ids" eval="[
+            (4, ref('group_recon_officer')),
+            (4, ref('group_manual_recon_officer')),
+        ]"/>
+        <field name="comment">Access to both menus. Own records only, no delete.</field>
     </record>
 
-    <!-- Manager: full access to all records -->
+    <!-- ROLE 4: Manager — all records, both menus, full access -->
     <record id="group_fin_recon_manager" model="res.groups">
         <field name="name">Manager</field>
         <field name="category_id" ref="module_financial_reconciliation"/>
         <field name="implied_ids" eval="[(4, ref('group_fin_recon_user'))]"/>
-        <field name="comment">Full access to all reconciliation records including delete.</field>
+        <field name="comment">Full access to all records in both menus including delete.</field>
     </record>
 
 </odoo>

@@ -1,15 +1,15 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_fin_recon_user,fin.reconciliation user,model_fin_reconciliation,ap_reconciliation.group_fin_recon_user,1,1,1,0
-access_fin_recon_line_user,fin.reconciliation.line user,model_fin_reconciliation_line,ap_reconciliation.group_fin_recon_user,1,1,1,0
-access_fin_manual_recon_user,fin.manual.reconciliation user,model_fin_manual_reconciliation,ap_reconciliation.group_fin_recon_user,1,1,1,0
-access_fin_manual_recon_line_user,fin.manual.reconciliation.line user,model_fin_manual_reconciliation_line,ap_reconciliation.group_fin_recon_user,1,1,1,0
+access_fin_recon_officer,fin.reconciliation officer,model_fin_reconciliation,ap_reconciliation.group_recon_officer,1,1,1,0
+access_fin_recon_line_officer,fin.reconciliation.line officer,model_fin_reconciliation_line,ap_reconciliation.group_recon_officer,1,1,1,0
+access_fin_manual_recon_officer,fin.manual.reconciliation officer,model_fin_manual_reconciliation,ap_reconciliation.group_manual_recon_officer,1,1,1,0
+access_fin_manual_recon_line_officer,fin.manual.reconciliation.line officer,model_fin_manual_reconciliation_line,ap_reconciliation.group_manual_recon_officer,1,1,1,0
 access_fin_recon_manager,fin.reconciliation manager,model_fin_reconciliation,ap_reconciliation.group_fin_recon_manager,1,1,1,1
 access_fin_recon_line_manager,fin.reconciliation.line manager,model_fin_reconciliation_line,ap_reconciliation.group_fin_recon_manager,1,1,1,1
 access_fin_manual_recon_manager,fin.manual.reconciliation manager,model_fin_manual_reconciliation,ap_reconciliation.group_fin_recon_manager,1,1,1,1
 access_fin_manual_recon_line_manager,fin.manual.reconciliation.line manager,model_fin_manual_reconciliation_line,ap_reconciliation.group_fin_recon_manager,1,1,1,1
-access_account_move_user,account.move fin user,account.model_account_move,ap_reconciliation.group_fin_recon_user,1,0,0,0
-access_account_move_line_user,account.move.line fin user,account.model_account_move_line,ap_reconciliation.group_fin_recon_user,1,0,0,0
-access_account_journal_user,account.journal fin user,account.model_account_journal,ap_reconciliation.group_fin_recon_user,1,0,0,0
+access_account_move_officer,account.move recon officer,account.model_account_move,ap_reconciliation.group_recon_officer,1,0,0,0
+access_account_move_line_officer,account.move.line recon officer,account.model_account_move_line,ap_reconciliation.group_recon_officer,1,0,0,0
+access_account_journal_officer,account.journal recon officer,account.model_account_journal,ap_reconciliation.group_recon_officer,1,0,0,0
 access_account_move_manager,account.move fin manager,account.model_account_move,ap_reconciliation.group_fin_recon_manager,1,0,0,0
 access_account_move_line_manager,account.move.line fin manager,account.model_account_move_line,ap_reconciliation.group_fin_recon_manager,1,0,0,0
 access_account_journal_manager,account.journal fin manager,account.model_account_journal,ap_reconciliation.group_fin_recon_manager,1,0,0,0

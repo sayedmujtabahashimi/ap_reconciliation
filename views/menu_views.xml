@@ -1,27 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Standalone top-level app menu -->
+    <!-- Top-level menu visible to anyone with any role -->
     <menuitem
         id="menu_fin_reconciliation_root"
         name="Financial Reconciliation"
         sequence="99"
-        groups="ap_reconciliation.group_fin_recon_user"/>
+        groups="ap_reconciliation.group_recon_officer,ap_reconciliation.group_manual_recon_officer"/>
 
+    <!-- AP Reconciliation: visible to Reconciliation Officer, User, Manager -->
     <menuitem
         id="menu_fin_reconciliation"
         name="AP Reconciliation"
         parent="menu_fin_reconciliation_root"
         action="action_fin_reconciliation"
         sequence="10"
-        groups="ap_reconciliation.group_fin_recon_user"/>
+        groups="ap_reconciliation.group_recon_officer"/>
 
+    <!-- Manual Reconciliation: visible to Manual Reconciliation Officer, User, Manager -->
     <menuitem
         id="menu_fin_manual_reconciliation"
         name="Manual Reconciliation"
         parent="menu_fin_reconciliation_root"
         action="action_fin_manual_reconciliation"
         sequence="20"
-        groups="ap_reconciliation.group_fin_recon_user"/>
+        groups="ap_reconciliation.group_manual_recon_officer"/>
 
 </odoo>
