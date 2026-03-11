@@ -90,7 +90,7 @@
                             string="Compare Records"
                             type="object"
                             class="btn-primary"
-                            invisible="state == 'draft'"/>
+                            invisible="state != 'loaded'"/>
                     <button name="action_export_report"
                             string="Export Report"
                             type="object"
