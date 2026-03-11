@@ -247,7 +247,16 @@ class FinReconciliation(models.Model):
             })
 
         self.write({'state': 'reconciled'})
-        return self._reload()
+        # Redirect directly to Reconciliation Results
+        return {
+            'type':      'ir.actions.act_window',
+            'name':      'Reconciliation Results',
+            'res_model': 'fin.reconciliation.line',
+            'view_mode': 'tree,form',
+            'domain':    [('reconciliation_id', '=', self.id)],
+            'context':   {'search_default_filter_mismatch': 1},
+            'target':    'current',
+        }
 
     def action_export_report(self):
         """Export colour-coded Excel report."""

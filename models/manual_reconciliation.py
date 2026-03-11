@@ -134,7 +134,16 @@ class FinManualReconciliation(models.Model):
             self.env['fin.manual.reconciliation.line'].create(vals_list)
 
         self.write({'state': 'reconciled'})
-        return self._reload()
+        # Redirect directly to Manual Reconciliation Results
+        return {
+            'type':      'ir.actions.act_window',
+            'name':      'Manual Reconciliation Results',
+            'res_model': 'fin.manual.reconciliation.line',
+            'view_mode': 'tree,form',
+            'domain':    [('reconciliation_id', '=', self.id)],
+            'context':   {'search_default_filter_mismatch': 1},
+            'target':    'current',
+        }
 
     def action_export_report(self):
         self.ensure_one()

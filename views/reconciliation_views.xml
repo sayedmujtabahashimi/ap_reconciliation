@@ -118,22 +118,6 @@
                         </div>
                     </div>
 
-                    <!-- Summary badges -->
-                    <div class="o_recon_summary" invisible="state != 'reconciled'">
-                        <span class="o_recon_badge o_recon_total">
-                            Total: <field name="total_lines" readonly="1"/>
-                        </span>
-                        <span class="o_recon_badge o_recon_ok">
-                            ✔ Matched: <field name="matched_lines" readonly="1"/>
-                        </span>
-                        <span class="o_recon_badge o_recon_mismatch">
-                            ✗ Mismatch: <field name="mismatch_lines" readonly="1"/>
-                        </span>
-                        <span class="o_recon_badge o_recon_notfound">
-                            ? Not Found: <field name="not_found_lines" readonly="1"/>
-                        </span>
-                    </div>
-
                     <!-- FILTERS -->
                     <group string="Step 1 — Filters">
                         <group>
@@ -165,28 +149,6 @@
                             <field name="excel_filename" invisible="1"/>
                         </group>
                     </group>
-
-                    <!-- LEGEND -->
-                    <div class="o_recon_legend" invisible="state != 'reconciled'">
-                        <span class="o_recon_legend_item o_recon_ok">■ Matched</span>
-                        <span class="o_recon_legend_item o_recon_mismatch">■ Mismatch</span>
-                        <span class="o_recon_legend_item o_recon_notfound">■ Not Found</span>
-                    </div>
-
-                    <notebook invisible="state == 'draft'">
-                        <page string="All Lines">
-                            <field name="line_ids"
-                                   readonly="1"
-                                   nolabel="1"
-                                   context="{'list_view_ref': 'ap_reconciliation.view_fin_recon_line_all'}"/>
-                        </page>
-                        <page string="Mismatches Only">
-                            <field name="mismatch_line_ids"
-                                   readonly="1"
-                                   nolabel="1"
-                                   context="{'list_view_ref': 'ap_reconciliation.view_fin_recon_line_mismatch'}"/>
-                        </page>
-                    </notebook>
                 </sheet>
             </form>
         </field>
@@ -201,17 +163,13 @@
         <field name="model">fin.reconciliation</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="name"            string="Reference"/>
-                <field name="create_uid"      string="Created By"/>
-                <field name="date_filter"     string="Period"/>
-                <field name="date_from"       string="From"/>
-                <field name="date_to"         string="To"/>
-                <field name="total_lines"     string="Total"/>
-                <field name="matched_lines"   string="Matched"/>
-                <field name="mismatch_lines"  string="Mismatches"/>
-                <field name="not_found_lines" string="Not Found"/>
-                <field name="create_date"     string="Created"/>
-                <field name="state"           widget="badge"/>
+                <field name="name"        string="Reference"/>
+                <field name="create_uid"  string="Created By"/>
+                <field name="date_filter" string="Period"/>
+                <field name="date_from"   string="From"/>
+                <field name="date_to"     string="To"/>
+                <field name="create_date" string="Created"/>
+                <field name="state"       widget="badge"/>
             </tree>
         </field>
     </record>
