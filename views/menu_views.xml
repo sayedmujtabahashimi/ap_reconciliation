@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Top-level menu visible to anyone with any role -->
+    <!-- Single top-level menu -->
     <menuitem
         id="menu_fin_reconciliation_root"
         name="Financial Reconciliation"
         sequence="99"
         groups="ap_reconciliation.group_recon_officer,ap_reconciliation.group_manual_recon_officer"/>
 
-    <!-- AP Reconciliation: visible to Reconciliation Officer, User, Manager -->
+    <!-- AP Reconciliation -->
     <menuitem
         id="menu_fin_reconciliation"
         name="AP Reconciliation"
@@ -17,13 +17,31 @@
         sequence="10"
         groups="ap_reconciliation.group_recon_officer"/>
 
-    <!-- Manual Reconciliation: visible to Manual Reconciliation Officer, User, Manager -->
+    <!-- Reconciliation Results -->
+    <menuitem
+        id="menu_fin_recon_results"
+        name="Reconciliation Results"
+        parent="menu_fin_reconciliation_root"
+        action="action_fin_recon_results"
+        sequence="20"
+        groups="ap_reconciliation.group_recon_officer"/>
+
+    <!-- Manual Reconciliation -->
     <menuitem
         id="menu_fin_manual_reconciliation"
         name="Manual Reconciliation"
         parent="menu_fin_reconciliation_root"
         action="action_fin_manual_reconciliation"
-        sequence="20"
+        sequence="30"
+        groups="ap_reconciliation.group_manual_recon_officer"/>
+
+    <!-- Manual Reconciliation Results -->
+    <menuitem
+        id="menu_fin_manual_recon_results"
+        name="Manual Reconciliation Results"
+        parent="menu_fin_reconciliation_root"
+        action="action_fin_manual_recon_results"
+        sequence="40"
         groups="ap_reconciliation.group_manual_recon_officer"/>
 
 </odoo>

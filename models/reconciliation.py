@@ -176,7 +176,7 @@ class FinReconciliation(models.Model):
         # Batch read only needed fields
         invoice_data = invoices.read([
             'name', 'partner_id', 'invoice_date', 'date',
-            'amount_total', 'currency_id', 'id', 'state', 'payment_state'
+            'amount_total', 'currency_id', 'id', 'state', 'payment_state', 'journal_id'
         ])
 
         vals_list = [{
@@ -388,9 +388,10 @@ class FinReconciliationLine(models.Model):
     move_id        = fields.Many2one('account.move', ondelete='set null', index=True)
     invoice_number = fields.Char(string='Invoice #', index=True)
     partner_name   = fields.Char(string='Customer')
-    invoice_date   = fields.Date(string='Date')
+    invoice_date   = fields.Date(string='Date', index=True)
     total_amount   = fields.Float(string='Total', digits=(16, 2))
     currency_id    = fields.Many2one('res.currency')
+    journal_id     = fields.Many2one('account.journal', string='Journal', index=True)
     status         = fields.Char(string='Status')
     payment_state  = fields.Char(string='Payment')
 
@@ -402,3 +403,16 @@ class FinReconciliationLine(models.Model):
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
     name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False, index=True)
     amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False, index=True)
+
+    def open_invoice(self):
+        """Open the real Odoo invoice form when clicking a result row."""
+        self.ensure_one()
+        if not self.move_id:
+            raise UserError('No linked invoice found for this record.')
+        return {
+            'type':      'ir.actions.act_window',
+            'res_model': 'account.move',
+            'res_id':    self.move_id.id,
+            'view_mode': 'form',
+            'target':    'current',
+        }

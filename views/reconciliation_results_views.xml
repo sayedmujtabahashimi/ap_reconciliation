@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════
+         RECONCILIATION RESULTS — tree only, click opens real invoice
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_fin_recon_results_tree" model="ir.ui.view">
+        <field name="name">fin.reconciliation.line.results.tree</field>
+        <field name="model">fin.reconciliation.line</field>
+        <field name="arch" type="xml">
+            <tree string="Reconciliation Results"
+                  decoration-danger="name_mismatch == True or amount_mismatch == True"
+                  decoration-warning="hp_found == False"
+                  decoration-success="hp_found == True and name_mismatch == False and amount_mismatch == False"
+                  create="false" delete="false" edit="false"
+                  open_form_view="false">
+                <field name="reconciliation_id"  string="Reconciliation"/>
+                <field name="invoice_number"     string="Invoice #"/>
+                <field name="journal_id"         string="Journal"/>
+                <field name="partner_name"       string="Customer"/>
+                <field name="invoice_date"       string="Date"/>
+                <field name="total_amount"       string="Total"
+                       widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id"        column_invisible="1"/>
+                <field name="status"             string="Status"/>
+                <field name="payment_state"      string="Payment"/>
+                <field name="hp_found"           string="In HesabPay" widget="boolean_toggle"/>
+                <field name="hp_partner_name"    string="HP Customer"
+                       decoration-danger="name_mismatch == True"/>
+                <field name="hp_invoice_date"    string="HP Date"/>
+                <field name="hp_total_amount"    string="HP Total"
+                       decoration-danger="amount_mismatch == True"/>
+                <field name="amount_difference"  string="Difference"
+                       decoration-danger="amount_mismatch == True"
+                       decoration-success="amount_mismatch == False and hp_found == True"/>
+                <field name="name_mismatch"      column_invisible="1"/>
+                <field name="amount_mismatch"    column_invisible="1"/>
+                <field name="move_id"            column_invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
+         SEARCH VIEW — with filters and group-by
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_fin_recon_results_search" model="ir.ui.view">
+        <field name="name">fin.reconciliation.line.results.search</field>
+        <field name="model">fin.reconciliation.line</field>
+        <field name="arch" type="xml">
+            <search string="Search Reconciliation Results">
+
+                <!-- Search fields -->
+                <field name="invoice_number" string="Invoice #"/>
+                <field name="partner_name"   string="Customer"/>
+                <field name="journal_id"     string="Journal"/>
+                <field name="reconciliation_id" string="Reconciliation"/>
+
+                <!-- Filters -->
+                <filter name="filter_mismatch"
+                        string="Mismatches"
+                        domain="['|', ('name_mismatch','=',True), ('amount_mismatch','=',True)]"/>
+                <filter name="filter_not_found"
+                        string="Not Found in HesabPay"
+                        domain="[('hp_found','=',False)]"/>
+                <filter name="filter_amount_mismatch"
+                        string="Amount Mismatch"
+                        domain="[('amount_mismatch','=',True)]"/>
+                <filter name="filter_name_mismatch"
+                        string="Name Mismatch"
+                        domain="[('name_mismatch','=',True)]"/>
+                <separator/>
+                <filter name="filter_today"
+                        string="Today"
+                        domain="[('invoice_date','=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_this_week"
+                        string="This Week"
+                        domain="[('invoice_date','&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_this_month"
+                        string="This Month"
+                        domain="[('invoice_date','&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year"
+                        string="This Year"
+                        domain="[('invoice_date','&gt;=', context_today().strftime('%Y-01-01'))]"/>
+
+                <!-- Group By -->
+                <group expand="0" string="Group By">
+                    <filter name="group_journal"
+                            string="Journal"
+                            context="{'group_by': 'journal_id'}"/>
+                    <filter name="group_reconciliation"
+                            string="Reconciliation"
+                            context="{'group_by': 'reconciliation_id'}"/>
+                    <filter name="group_partner"
+                            string="Customer"
+                            context="{'group_by': 'partner_name'}"/>
+                    <filter name="group_date_day"
+                            string="Date: Day"
+                            context="{'group_by': 'invoice_date:day'}"/>
+                    <filter name="group_date_week"
+                            string="Date: Week"
+                            context="{'group_by': 'invoice_date:week'}"/>
+                    <filter name="group_date_month"
+                            string="Date: Month"
+                            context="{'group_by': 'invoice_date:month'}"/>
+                    <filter name="group_date_year"
+                            string="Date: Year"
+                            context="{'group_by': 'invoice_date:year'}"/>
+                </group>
+
+            </search>
+        </field>
+    </record>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         READ-ONLY FORM POPUP — shows detail + link to real invoice
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="view_fin_recon_results_form" model="ir.ui.view">
+        <field name="name">fin.reconciliation.line.results.form</field>
+        <field name="model">fin.reconciliation.line</field>
+        <field name="arch" type="xml">
+            <form string="Reconciliation Result Detail" create="false" edit="false" delete="false">
+                <header>
+                    <button name="open_invoice"
+                            string="Open Real Invoice"
+                            type="object"
+                            class="btn-primary"
+                            invisible="move_id == False"/>
+                </header>
+                <sheet>
+                    <group string="Invoice Details">
+                        <group>
+                            <field name="reconciliation_id" string="Reconciliation" readonly="1"/>
+                            <field name="invoice_number"    string="Invoice #"      readonly="1"/>
+                            <field name="journal_id"        string="Journal"        readonly="1"/>
+                            <field name="partner_name"      string="Customer"       readonly="1"/>
+                            <field name="invoice_date"      string="Date"           readonly="1"/>
+                            <field name="total_amount"      string="Total"          readonly="1"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id"       invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="status"            string="Status"         readonly="1"/>
+                            <field name="payment_state"     string="Payment"        readonly="1"/>
+                            <field name="move_id"           string="Linked Invoice" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="HesabPay Details">
+                        <group>
+                            <field name="hp_found"          string="Found in HesabPay" readonly="1"/>
+                            <field name="hp_partner_name"   string="HP Customer"    readonly="1"/>
+                            <field name="hp_invoice_date"   string="HP Date"        readonly="1"/>
+                            <field name="hp_total_amount"   string="HP Total"       readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="amount_difference" string="Difference"     readonly="1"/>
+                            <field name="name_mismatch"     string="Name Mismatch"  readonly="1"/>
+                            <field name="amount_mismatch"   string="Amount Mismatch" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
+         WINDOW ACTION — opens real invoice on row click
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_fin_recon_results" model="ir.actions.act_window">
+        <field name="name">Reconciliation Results</field>
+        <field name="res_model">fin.reconciliation.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_fin_recon_results_tree"/>
+        <field name="search_view_id" ref="view_fin_recon_results_search"/>
+        <field name="domain">[]</field>
+        <field name="context">{
+            'search_default_filter_mismatch': 1
+        }</field>
+        <field name="groups_id" eval="[(4, ref('ap_reconciliation.group_recon_officer'))]"/>
+    </record>
+
+</odoo>

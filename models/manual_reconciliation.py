@@ -284,7 +284,7 @@ class FinManualReconciliationLine(models.Model):
     invoice_number = fields.Char(string='Invoice #', index=True)
 
     a_customer = fields.Char(string='Customer')
-    a_date     = fields.Date(string='Date')
+    a_date     = fields.Date(string='Date', index=True)
     a_total    = fields.Float(string='Total', digits=(16, 2))
 
     found_in_b = fields.Boolean(string='In HesabPay', default=False, index=True)

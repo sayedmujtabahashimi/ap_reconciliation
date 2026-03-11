@@ -21,6 +21,8 @@ Financial Reconciliation
         'security/groups.xml',
         'views/reconciliation_views.xml',
         'views/manual_reconciliation_views.xml',
+        'views/reconciliation_results_views.xml',
+        'views/manual_recon_results_views.xml',
         'views/menu_views.xml',
         'security/ir.model.access.csv',
     ],
