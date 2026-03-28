@@ -47,7 +47,7 @@ class FinReconciliation(models.Model):
         'recon_id',
         'journal_id',
         string='Journals',
-        domain=[('type', 'in', ['sale', 'purchase', 'bank', 'cash'])],
+        domain=lambda self: [('id', 'in', self.env.user.allowed_journals.ids)],
     )
 
     invoice_number_filter = fields.Selection([
@@ -160,7 +160,7 @@ class FinReconciliation(models.Model):
             domain += [('journal_id', 'in', self.journal_ids.ids)]
 
         if self.invoice_number_filter:
-            domain += [('name', 'ilike', self.invoice_number_filter)]
+            domain += [('payment_reference', 'ilike', self.invoice_number_filter)]
 
         _logger.info('FinRecon domain: %s', domain)
 
