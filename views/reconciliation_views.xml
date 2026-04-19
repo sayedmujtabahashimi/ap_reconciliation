@@ -14,7 +14,7 @@
                   decoration-success="hp_found == True and amount_mismatch == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
-                <field name="bank_acc_no"           string="Bank Name"/>
+                <field name="bank_acc_no"       string="Bank Name"/>
                 <field name="transaction_id"    string="Transaction ID"/>
                 <field name="partner_name"      string="Customer"/>
                 <field name="invoice_date"      string="Date"/>
@@ -25,11 +25,15 @@
                 <field name="status"            string="Status"/>
                 <field name="payment_state"     string="Payment"/>
                 <field name="hp_found"          string="In HesabPay" widget="boolean_toggle"/>
+
+
+
+
                 <field name="hp_partner_name"   string="HP Customer"/>
                 <field name="hp_invoice_date"   string="HP Date"/>
                 <field name="hp_total_amount"   string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="hp_bank_acc_no"        string="HP Bank Name"/>
+                <field name="hp_bank_acc_no"    string="HP Bank Name"/>
                 <field name="hp_transaction_id" string="HP Transaction ID"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"
@@ -51,7 +55,7 @@
                   decoration-warning="hp_found == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
-                <field name="bank_acc_no"           string="Bank Name"/>
+                <field name="bank_acc_no"       string="Bank Name"/>
                 <field name="transaction_id"    string="Transaction ID"/>
                 <field name="partner_name"      string="Customer"/>
                 <field name="invoice_date"      string="Date"/>
@@ -59,15 +63,21 @@
                        widget="monetary"
                        options="{'currency_field': 'currency_id'}"/>
                 <field name="currency_id"       column_invisible="1"/>
+                <field name="hp_found"          column_invisible="1"/>
+
+
+
+
+
+
                 <field name="hp_partner_name"   string="HP Customer"/>
                 <field name="hp_invoice_date"   string="HP Date"/>
                 <field name="hp_total_amount"   string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="hp_bank_acc_no"        string="HP Bank Name"/>
+                <field name="hp_bank_acc_no"    string="HP Bank Name"/>
                 <field name="hp_transaction_id" string="HP Transaction ID"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="hp_found"          column_invisible="1"/>
                 <field name="amount_mismatch"   column_invisible="1"/>
             </tree>
         </field>

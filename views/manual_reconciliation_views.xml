@@ -13,23 +13,24 @@
                   decoration-warning="found_in_b == False"
                   decoration-success="found_in_b == True and amount_mismatch == False"
                   create="false" delete="false" edit="false">
-                <field name="invoice_number"    string="Invoice #"/>
-                <field name="a_customer"        string="Customer"/>
-                <field name="a_date"            string="Date"/>
-                <field name="a_total"           string="Total"/>
-                <field name="a_bank_acc_no"         string="Bank Name"/>
-                <field name="a_transaction_id"  string="Transaction ID"/>
-                <field name="found_in_b"        string="In HesabPay" widget="boolean_toggle"/>
-                <field name="b_customer"        string="HP Customer"/>
-                <field name="b_date"            string="HP Date"/>
-                <field name="b_total"           string="HP Total"
+                <field name="invoice_number" string="Invoice #"/>
+                <field name="a_customer" string="Customer"/>
+                <field name="a_date" string="Date"/>
+                <field name="a_total" string="Total"/>
+                <field name="a_bank_acc_no" string="Bank Name"/>
+                <field name="a_transaction_id" string="Transaction ID"/>
+                <field name="found_in_b" string="In HesabPay" widget="boolean_toggle"/>
+
+                <field name="b_customer" string="HP Customer"/>
+                <field name="b_date" string="HP Date"/>
+                <field name="b_total" string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="b_bank_acc_no"         string="HP Bank Name"/>
-                <field name="b_transaction_id"  string="HP Transaction ID"/>
+                <field name="b_bank_acc_no" string="HP Bank Name"/>
+                <field name="b_transaction_id" string="HP Transaction ID"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"
                        decoration-success="amount_mismatch == False and found_in_b == True"/>
-                <field name="amount_mismatch"   column_invisible="1"/>
+                <field name="amount_mismatch" column_invisible="1"/>
             </tree>
         </field>
     </record>
@@ -45,22 +46,24 @@
             <tree decoration-danger="amount_mismatch == True"
                   decoration-warning="found_in_b == False"
                   create="false" delete="false" edit="false">
-                <field name="invoice_number"    string="Invoice #"/>
-                <field name="a_customer"        string="Customer"/>
-                <field name="a_date"            string="Date"/>
-                <field name="a_total"           string="Total"/>
-                <field name="a_bank_acc_no"         string="Bank Name"/>
-                <field name="a_transaction_id"  string="Transaction ID"/>
-                <field name="found_in_b"        column_invisible="1"/>
-                <field name="b_customer"        string="HP Customer"/>
-                <field name="b_date"            string="HP Date"/>
-                <field name="b_total"           string="HP Total"
+                <field name="invoice_number" string="Invoice #"/>
+                <field name="a_customer" string="Customer"/>
+                <field name="a_date" string="Date"/>
+                <field name="a_total" string="Total"/>
+                <field name="a_bank_acc_no" string="Bank Name"/>
+                <field name="a_transaction_id" string="Transaction ID"/>
+                <field name="found_in_b" column_invisible="1"/>
+
+
+                <field name="b_customer" string="HP Customer"/>
+                <field name="b_date" string="HP Date"/>
+                <field name="b_total" string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="b_bank_acc_no"         string="HP Bank Name"/>
-                <field name="b_transaction_id"  string="HP Transaction ID"/>
+                <field name="b_bank_acc_no" string="HP Bank Name"/>
+                <field name="b_transaction_id" string="HP Transaction ID"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="amount_mismatch"   column_invisible="1"/>
+                <field name="amount_mismatch" column_invisible="1"/>
             </tree>
         </field>
     </record>
@@ -102,24 +105,32 @@
                             <field name="name" placeholder="e.g. December 2025 Manual Reconciliation"/>
                         </h1>
                         <div class="o_recon_meta" invisible="state == 'draft'">
-                            <span>Created by: <field name="create_uid" readonly="1"/></span>
-                            <span style="margin-left:16px;">Created: <field name="create_date" readonly="1"/></span>
+                            <span>Created by:
+                                <field name="create_uid" readonly="1"/>
+                            </span>
+                            <span style="margin-left:16px;">Created:
+                                <field name="create_date" readonly="1"/>
+                            </span>
                         </div>
                     </div>
 
                     <!-- Summary badges -->
                     <div class="o_recon_summary" invisible="state != 'reconciled'">
                         <span class="o_recon_badge o_recon_total">
-                            Total: <field name="total_lines" readonly="1"/>
+                            Total:
+                            <field name="total_lines" readonly="1"/>
                         </span>
                         <span class="o_recon_badge o_recon_ok">
-                            ✔ Matched: <field name="matched_lines" readonly="1"/>
+                            ✔ Matched:
+                            <field name="matched_lines" readonly="1"/>
                         </span>
                         <span class="o_recon_badge o_recon_mismatch">
-                            ✗ Mismatch: <field name="mismatch_lines" readonly="1"/>
+                            ✗ Mismatch:
+                            <field name="mismatch_lines" readonly="1"/>
                         </span>
                         <span class="o_recon_badge o_recon_notfound">
-                            ? Not Found: <field name="not_found_lines" readonly="1"/>
+                            ? Not Found:
+                            <field name="not_found_lines" readonly="1"/>
                         </span>
                     </div>
 
@@ -129,20 +140,21 @@
                             <field name="file_a" widget="binary"
                                    filename="file_a_name"
                                    string="Upload Afghan Post File (.xlsx)"/>
-                            <field name="file_a_name"  invisible="1"/>
+                            <field name="file_a_name" invisible="1"/>
                             <field name="file_a_label" invisible="1"/>
                         </group>
                         <group string="HesabPay File">
                             <field name="file_b" widget="binary"
                                    filename="file_b_name"
                                    string="Upload HesabPay File (.xlsx)"/>
-                            <field name="file_b_name"  invisible="1"/>
+                            <field name="file_b_name" invisible="1"/>
                             <field name="file_b_label" invisible="1"/>
                         </group>
                     </group>
 
                     <div class="o_recon_hint" style="margin: 8px 16px 16px 16px;">
-                        <i class="fa fa-info-circle"/> Both files must use the format:
+                        <i class="fa fa-info-circle"/>
+                        Both files must use the format:
                         <strong>Number | Customer | Total | Invoice Date</strong>
                     </div>
 
@@ -182,14 +194,14 @@
         <field name="model">fin.manual.reconciliation</field>
         <field name="arch" type="xml">
             <tree>
-                <field name="name"            string="Reference"/>
-                <field name="create_uid"      string="Created By"/>
-                <field name="total_lines"     string="Total"/>
-                <field name="matched_lines"   string="Matched"/>
-                <field name="mismatch_lines"  string="Mismatches"/>
+                <field name="name" string="Reference"/>
+                <field name="create_uid" string="Created By"/>
+                <field name="total_lines" string="Total"/>
+                <field name="matched_lines" string="Matched"/>
+                <field name="mismatch_lines" string="Mismatches"/>
                 <field name="not_found_lines" string="Not Found"/>
-                <field name="create_date"     string="Created"/>
-                <field name="state"           widget="badge"/>
+                <field name="create_date" string="Created"/>
+                <field name="state" widget="badge"/>
             </tree>
         </field>
     </record>
@@ -204,8 +216,8 @@
         <field name="model_id" search="[(&quot;model&quot;,&quot;=&quot;,&quot;fin.manual.reconciliation&quot;)]"/>
         <field name="domain_force">[('create_uid','=',user.id)]</field>
         <field name="groups" eval="[(4, ref('ap_reconciliation.group_manual_recon_officer'))]"/>
-        <field name="perm_read"   eval="True"/>
-        <field name="perm_write"  eval="True"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="False"/>
     </record>
@@ -216,8 +228,8 @@
         <field name="model_id" search="[(&quot;model&quot;,&quot;=&quot;,&quot;fin.manual.reconciliation&quot;)]"/>
         <field name="domain_force">[(1,'=',1)]</field>
         <field name="groups" eval="[(4, ref('ap_reconciliation.group_fin_recon_manager'))]"/>
-        <field name="perm_read"   eval="True"/>
-        <field name="perm_write"  eval="True"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
     </record>

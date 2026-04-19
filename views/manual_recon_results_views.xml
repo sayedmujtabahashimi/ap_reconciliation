@@ -19,14 +19,15 @@
                 <field name="a_customer"         string="Customer"/>
                 <field name="a_date"             string="Date"/>
                 <field name="a_total"            string="Total"/>
-                <field name="a_bank_acc_no"          string="Bank Name"/>
+                <field name="a_bank_acc_no"      string="Bank Name"/>
                 <field name="a_transaction_id"   string="Transaction ID"/>
                 <field name="found_in_b"         string="In HesabPay" widget="boolean_toggle"/>
+
                 <field name="b_customer"         string="HP Customer"/>
                 <field name="b_date"             string="HP Date"/>
                 <field name="b_total"            string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="b_bank_acc_no"          string="HP Bank Name"/>
+                <field name="b_bank_acc_no"      string="HP Bank Name"/>
                 <field name="b_transaction_id"   string="HP Transaction ID"/>
                 <field name="amount_difference"  string="Difference"
                        decoration-danger="amount_mismatch == True"
@@ -61,7 +62,7 @@
                 <filter name="filter_amount_mismatch"
                         string="Amount Mismatch"
                         domain="[('amount_mismatch','=',True)]"/>
-                <separator/>
+
                 <filter name="filter_today"
                         string="Today"
                         domain="[('a_date','=', context_today().strftime('%Y-%m-%d'))]"/>

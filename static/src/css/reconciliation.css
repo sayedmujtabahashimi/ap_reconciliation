@@ -113,8 +113,10 @@
 }
 
 /* Separator visual between Odoo and HP columns */
-.o_ap_reconciliation thead th:nth-child(6),
-.o_ap_reconciliation tbody td:nth-child(6) {
+.o_ap_reconciliation td.o_field_cell[name="hp_partner_name"] {
+    border-left: 3px solid #4a72f5 !important;
+}
+.o_ap_reconciliation td.o_field_cell[name="b_customer"] {
     border-left: 3px solid #4a72f5 !important;
 }
 
