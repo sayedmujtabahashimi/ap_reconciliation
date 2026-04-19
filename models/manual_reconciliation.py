@@ -50,7 +50,6 @@ class FinManualReconciliation(models.Model):
         'fin.manual.reconciliation.line', 'reconciliation_id',
         string='Mismatches',
         domain=[
-            '|', ('name_mismatch', '=', True),
             '|', ('amount_mismatch', '=', True),
                  ('found_in_b', '=', False),
         ],
@@ -61,17 +60,17 @@ class FinManualReconciliation(models.Model):
     mismatch_lines  = fields.Integer(compute='_compute_summary', store=True)
     not_found_lines = fields.Integer(compute='_compute_summary', store=True)
 
-    @api.depends('line_ids.found_in_b', 'line_ids.name_mismatch', 'line_ids.amount_mismatch')
+    @api.depends('line_ids.found_in_b', 'line_ids.amount_mismatch')
     def _compute_summary(self):
         for rec in self:
             lines = rec.line_ids
             rec.total_lines     = len(lines)
             rec.not_found_lines = len(lines.filtered(lambda l: not l.found_in_b))
             rec.mismatch_lines  = len(lines.filtered(
-                lambda l: l.found_in_b and (l.name_mismatch or l.amount_mismatch)
+                lambda l: l.found_in_b and l.amount_mismatch
             ))
             rec.matched_lines = len(lines.filtered(
-                lambda l: l.found_in_b and not l.name_mismatch and not l.amount_mismatch
+                lambda l: l.found_in_b and not l.amount_mismatch
             ))
 
     # ── Actions ───────────────────────────────────────────────────────────────
@@ -106,12 +105,15 @@ class FinManualReconciliation(models.Model):
                     'a_customer':        row_a['customer'],
                     'a_date':            row_a['date'],
                     'a_total':           row_a['total'],
+                    'a_bank_acc_no':         row_a.get('bank_acc_no', ''),
+                    'a_transaction_id':  row_a.get('transaction_id', ''),
                     'b_customer':        row_b['customer'],
                     'b_date':            row_b['date'],
                     'b_total':           row_b['total'],
+                    'b_bank_acc_no':         row_b.get('bank_acc_no', ''),
+                    'b_transaction_id':  row_b.get('transaction_id', ''),
                     'found_in_b':        True,
                     'amount_difference': diff,
-                    'name_mismatch':     row_a['customer'].strip().lower() != row_b['customer'].strip().lower(),
                     'amount_mismatch':   abs(diff) > 0.01,
                 })
             else:
@@ -121,12 +123,15 @@ class FinManualReconciliation(models.Model):
                     'a_customer':        row_a['customer'],
                     'a_date':            row_a['date'],
                     'a_total':           row_a['total'],
+                    'a_bank_acc_no':         row_a.get('bank_acc_no', ''),
+                    'a_transaction_id':  row_a.get('transaction_id', ''),
                     'b_customer':        '',
                     'b_date':            False,
                     'b_total':           0.0,
+                    'b_bank_acc_no':         '',
+                    'b_transaction_id':  '',
                     'found_in_b':        False,
                     'amount_difference': 0.0,
-                    'name_mismatch':     False,
                     'amount_mismatch':   False,
                 })
 
@@ -158,8 +163,10 @@ class FinManualReconciliation(models.Model):
         headers = [
             'Invoice #',
             f'{label_a} Customer', f'{label_a} Date', f'{label_a} Total',
+            f'{label_a} Bank ID', f'{label_a} Transaction ID',
             f'{label_b} Customer', f'{label_b} Date', f'{label_b} Total',
-            'Difference', 'Name Match?', 'Amount Match?', 'Result',
+            f'{label_b} Bank ID', f'{label_b} Transaction ID',
+            'Difference', 'Amount Match?', 'Result',
         ]
         ws.append(headers)
         for i, _ in enumerate(headers, 1):
@@ -171,7 +178,7 @@ class FinManualReconciliation(models.Model):
         for line in self.line_ids:
             if not line.found_in_b:
                 result, fill = 'NOT FOUND', nf_fill
-            elif line.name_mismatch or line.amount_mismatch:
+            elif line.amount_mismatch:
                 result, fill = 'MISMATCH', mismatch_fill
             else:
                 result, fill = 'OK', ok_fill
@@ -179,9 +186,10 @@ class FinManualReconciliation(models.Model):
             ws.append([
                 line.invoice_number,
                 line.a_customer, str(line.a_date or ''), line.a_total,
+                line.a_bank_acc_no or '', line.a_transaction_id or '',
                 line.b_customer, str(line.b_date or ''), line.b_total,
+                line.b_bank_acc_no or '', line.b_transaction_id or '',
                 line.amount_difference,
-                'NO' if line.name_mismatch  else 'YES',
                 'NO' if line.amount_mismatch else 'YES',
                 result,
             ])
@@ -264,8 +272,16 @@ class FinManualReconciliation(models.Model):
                             break
                         except ValueError:
                             date = None
+                bank_id_val        = str(row[4]).strip() if len(row) > 4 and row[4] is not None else ''
+                transaction_id_val = str(row[5]).strip() if len(row) > 5 and row[5] is not None else ''
                 if number:
-                    data[number] = {'customer': customer, 'total': total, 'date': date}
+                    data[number] = {
+                        'customer':       customer,
+                        'total':          total,
+                        'date':           date,
+                        'bank_acc_no':        bank_id_val,
+                        'transaction_id': transaction_id_val,
+                    }
             except Exception as e:
                 _logger.warning('Skipping Excel row: %s', e)
         wb.close()
@@ -286,12 +302,15 @@ class FinManualReconciliationLine(models.Model):
     a_customer = fields.Char(string='Customer')
     a_date     = fields.Date(string='Date')
     a_total    = fields.Float(string='Total', digits=(16, 2))
+    a_bank_acc_no = fields.Char(string='Bank Name')
+    a_transaction_id = fields.Char(string='Transaction ID')
 
     found_in_b = fields.Boolean(string='In HesabPay', default=False, index=True)
     b_customer = fields.Char(string='HP Customer')
     b_date     = fields.Date(string='HP Date')
     b_total    = fields.Float(string='HP Total', digits=(16, 2))
+    b_bank_acc_no = fields.Char(string='HP Bank Name')
+    b_transaction_id = fields.Char(string='HP Transaction ID')
 
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
-    name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False, index=True)
     amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False, index=True)

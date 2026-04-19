@@ -74,7 +74,6 @@ class FinReconciliation(models.Model):
         'reconciliation_id',
         string='Mismatches',
         domain=[
-            '|', ('name_mismatch', '=', True),
             '|', ('amount_mismatch', '=', True),
                  ('hp_found', '=', False),
         ],
@@ -91,17 +90,17 @@ class FinReconciliation(models.Model):
     mismatch_lines  = fields.Integer(compute='_compute_summary', store=True)
     not_found_lines = fields.Integer(compute='_compute_summary', store=True)
 
-    @api.depends('line_ids.hp_found', 'line_ids.name_mismatch', 'line_ids.amount_mismatch')
+    @api.depends('line_ids.hp_found', 'line_ids.amount_mismatch')
     def _compute_summary(self):
         for rec in self:
             lines = rec.line_ids
             rec.total_lines     = len(lines)
             rec.not_found_lines = len(lines.filtered(lambda l: not l.hp_found))
             rec.mismatch_lines  = len(lines.filtered(
-                lambda l: l.hp_found and (l.name_mismatch or l.amount_mismatch)
+                lambda l: l.hp_found and l.amount_mismatch
             ))
             rec.matched_lines = len(lines.filtered(
-                lambda l: l.hp_found and not l.name_mismatch and not l.amount_mismatch
+                lambda l: l.hp_found and not l.amount_mismatch
             ))
 
     # ── Actions ───────────────────────────────────────────────────────────────
@@ -181,20 +180,59 @@ class FinReconciliation(models.Model):
         # Batch read only needed fields
         invoice_data = invoices.read([
             'name', 'partner_id', 'invoice_date', 'date',
-            'amount_total', 'currency_id', 'id', 'state', 'payment_state'
+            'amount_total', 'currency_id', 'id', 'state', 'payment_state',
         ])
 
-        vals_list = [{
-            'reconciliation_id': self.id,
-            'invoice_number':    r['name'],
-            'partner_name':      r['partner_id'][1] if r['partner_id'] else '',
-            'invoice_date':      r['invoice_date'] or r['date'],
-            'total_amount':      r['amount_total'],
-            'currency_id':       r['currency_id'][0] if r['currency_id'] else False,
-            'move_id':           r['id'],
-            'status':            r['state'],
-            'payment_state':     r['payment_state'] or '',
-        } for r in invoice_data]
+        # transaction_id and bank_id live on the afp invoice models (egp_accounting module).
+        # We batch-fetch from each model and build a lookup: account.move id → (transaction_id, bank_name)
+        move_ids = [r['id'] for r in invoice_data]
+        move_extra = {}  # {move_id: {'transaction_id': ..., 'bank_acc_no': ...}}
+
+        AFP_MODELS = [
+            'afp.invoice.mofa',
+            'afp.invoice.mohe',
+            'afp.invoice.moe',
+            'afp.invoice.tveta',
+            'afp.invoice.edok',
+            'afp.vip.invoice.mofa',
+            'afp.vip.invoice.mohe',
+        ]
+        for model_name in AFP_MODELS:
+            try:
+                records = self.env[model_name].search_read(
+                    [('invoice_id', 'in', move_ids)],
+                    ['invoice_id', 'transaction_id', 'bank_id'],
+                )
+            except Exception:
+                continue
+            for rec in records:
+                mid = rec['invoice_id'][0] if isinstance(rec['invoice_id'], (list, tuple)) else rec['invoice_id']
+                if mid in move_extra:
+                    continue  # already found from a higher-priority model
+                bank_name = ''
+                if rec.get('bank_id'):
+                    bank_name = rec['bank_id'][1] if isinstance(rec['bank_id'], (list, tuple)) else ''
+                move_extra[mid] = {
+                    'transaction_id': str(rec.get('transaction_id') or ''),
+                    'bank_acc_no':    bank_name,
+                }
+
+        vals_list = []
+        for r in invoice_data:
+            extra = move_extra.get(r['id'], {})
+            vals_list.append({
+                'reconciliation_id': self.id,
+                'invoice_number':    r['name'],
+                'partner_name':      r['partner_id'][1] if r['partner_id'] else '',
+                'invoice_date':      r['invoice_date'] or r['date'],
+                'total_amount':      r['amount_total'],
+                'currency_id':       r['currency_id'][0] if r['currency_id'] else False,
+                'move_id':           r['id'],
+                'status':            r['state'],
+                'payment_state':     r['payment_state'] or '',
+                'bank_acc_no':       extra.get('bank_acc_no', ''),
+                'transaction_id':    extra.get('transaction_id', ''),
+            })
 
         if vals_list:
             # Batch create for maximum performance
@@ -228,9 +266,10 @@ class FinReconciliation(models.Model):
                     'hp_partner_name':   hp['customer'],
                     'hp_total_amount':   hp['total'],
                     'hp_invoice_date':   hp['date'],
+                    'hp_bank_acc_no':        hp.get('bank_acc_no', ''),
+                    'hp_transaction_id': hp.get('transaction_id', ''),
                     'hp_found':          True,
                     'amount_difference': diff,
-                    'name_mismatch':     line.partner_name.strip().lower() != hp['customer'].strip().lower(),
                     'amount_mismatch':   abs(diff) > 0.01,
                 }))
             else:
@@ -246,8 +285,9 @@ class FinReconciliation(models.Model):
                 'hp_found':          False,
                 'hp_partner_name':   '',
                 'hp_total_amount':   0.0,
+                'hp_bank_acc_no':        '',
+                'hp_transaction_id': '',
                 'amount_difference': 0.0,
-                'name_mismatch':     False,
                 'amount_mismatch':   False,
             })
 
@@ -272,9 +312,9 @@ class FinReconciliation(models.Model):
         hdr_font      = Font(bold=True, color='FFFFFF')
 
         headers = [
-            'Invoice #', 'Customer', 'Date', 'Total',
-            'HP Customer', 'HP Date', 'HP Total',
-            'Difference', 'Name Match?', 'Amount Match?', 'Result'
+            'Invoice #', 'Bank ID', 'Transaction ID', 'Customer', 'Date', 'Total',
+            'HP Customer', 'HP Date', 'HP Total', 'HP Bank ID', 'HP Transaction ID',
+            'Difference', 'Amount Match?', 'Result'
         ]
         ws.append(headers)
         for i, _ in enumerate(headers, 1):
@@ -286,17 +326,18 @@ class FinReconciliation(models.Model):
         for line in self.line_ids:
             if not line.hp_found:
                 result, fill = 'NOT FOUND', nf_fill
-            elif line.name_mismatch or line.amount_mismatch:
+            elif line.amount_mismatch:
                 result, fill = 'MISMATCH', mismatch_fill
             else:
                 result, fill = 'OK', ok_fill
 
             ws.append([
-                line.invoice_number, line.partner_name,
+                line.invoice_number, line.bank_acc_no or '', line.transaction_id or '',
+                line.partner_name,
                 str(line.invoice_date or ''), line.total_amount,
                 line.hp_partner_name, str(line.hp_invoice_date or ''),
-                line.hp_total_amount, line.amount_difference,
-                'NO' if line.name_mismatch  else 'YES',
+                line.hp_total_amount, line.hp_bank_acc_no or '', line.hp_transaction_id or '',
+                line.amount_difference,
                 'NO' if line.amount_mismatch else 'YES',
                 result,
             ])
@@ -372,8 +413,16 @@ class FinReconciliation(models.Model):
                             break
                         except ValueError:
                             date = None
+                bank_acc_val     = str(row[4]).strip() if len(row) > 4 and row[4] is not None else ''
+                transaction_id_val = str(row[5]).strip() if len(row) > 5 and row[5] is not None else ''
                 if number:
-                    data[number] = {'customer': customer, 'total': total, 'date': date}
+                    data[number] = {
+                        'customer':       customer,
+                        'total':          total,
+                        'date':           date,
+                        'bank_acc_no':        bank_acc_val,
+                        'transaction_id': transaction_id_val,
+                    }
             except Exception as e:
                 _logger.warning('Skipping Excel row: %s', e)
         wb.close()
@@ -399,11 +448,15 @@ class FinReconciliationLine(models.Model):
     status         = fields.Char(string='Status')
     payment_state  = fields.Char(string='Payment')
 
+    bank_acc_no = fields.Char(string='Bank Name')
+    transaction_id = fields.Char(string='Transaction ID')
+
     hp_found        = fields.Boolean(string='In HesabPay', default=False, index=True)
     hp_partner_name = fields.Char(string='HP Customer')
     hp_invoice_date = fields.Date(string='HP Date')
     hp_total_amount = fields.Float(string='HP Total', digits=(16, 2))
+    hp_bank_acc_no = fields.Char(string='HP Bank Name')
+    hp_transaction_id = fields.Char(string='HP Transaction ID')
 
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
-    name_mismatch     = fields.Boolean(string='Name Mismatch',   default=False, index=True)
     amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False, index=True)

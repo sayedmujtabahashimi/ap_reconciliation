@@ -10,13 +10,15 @@
         <field name="model">fin.reconciliation.line</field>
         <field name="arch" type="xml">
             <tree string="Reconciliation Results"
-                  decoration-danger="name_mismatch == True or amount_mismatch == True"
+                  decoration-danger="amount_mismatch == True"
                   decoration-warning="hp_found == False"
-                  decoration-success="hp_found == True and name_mismatch == False and amount_mismatch == False"
+                  decoration-success="hp_found == True and amount_mismatch == False"
                   create="false" delete="false" edit="false"
                   open_form_view="false">
                 <field name="reconciliation_id"  string="Reconciliation"/>
                 <field name="invoice_number"     string="Invoice #"/>
+                <field name="bank_acc_no"            string="Bank Name"/>
+                <field name="transaction_id"     string="Transaction ID"/>
                 <field name="journal_id"         string="Journal"/>
                 <field name="partner_name"       string="Customer"/>
                 <field name="invoice_date"       string="Date"/>
@@ -27,15 +29,15 @@
                 <field name="status"             string="Status"/>
                 <field name="payment_state"      string="Payment"/>
                 <field name="hp_found"           string="In HesabPay" widget="boolean_toggle"/>
-                <field name="hp_partner_name"    string="HP Customer"
-                       decoration-danger="name_mismatch == True"/>
+                <field name="hp_partner_name"    string="HP Customer"/>
                 <field name="hp_invoice_date"    string="HP Date"/>
                 <field name="hp_total_amount"    string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
+                <field name="hp_bank_acc_no"         string="HP Bank Name"/>
+                <field name="hp_transaction_id"  string="HP Transaction ID"/>
                 <field name="amount_difference"  string="Difference"
                        decoration-danger="amount_mismatch == True"
                        decoration-success="amount_mismatch == False and hp_found == True"/>
-                <field name="name_mismatch"      column_invisible="1"/>
                 <field name="amount_mismatch"    column_invisible="1"/>
                 <field name="move_id"            column_invisible="1"/>
             </tree>
@@ -61,16 +63,13 @@
                 <!-- Filters -->
                 <filter name="filter_mismatch"
                         string="Mismatches"
-                        domain="['|', ('name_mismatch','=',True), ('amount_mismatch','=',True)]"/>
+                        domain="[('amount_mismatch','=',True)]"/>
                 <filter name="filter_not_found"
                         string="Not Found in HesabPay"
                         domain="[('hp_found','=',False)]"/>
                 <filter name="filter_amount_mismatch"
                         string="Amount Mismatch"
                         domain="[('amount_mismatch','=',True)]"/>
-                <filter name="filter_name_mismatch"
-                        string="Name Mismatch"
-                        domain="[('name_mismatch','=',True)]"/>
                 <separator/>
                 <filter name="filter_today"
                         string="Today"
@@ -136,6 +135,8 @@
                         <group>
                             <field name="reconciliation_id" string="Reconciliation" readonly="1"/>
                             <field name="invoice_number"    string="Invoice #"      readonly="1"/>
+                            <field name="bank_acc_no"           string="Bank Name"        readonly="1"/>
+                            <field name="transaction_id"    string="Transaction ID" readonly="1"/>
                             <field name="journal_id"        string="Journal"        readonly="1"/>
                             <field name="partner_name"      string="Customer"       readonly="1"/>
                             <field name="invoice_date"      string="Date"           readonly="1"/>
@@ -156,10 +157,11 @@
                             <field name="hp_partner_name"   string="HP Customer"    readonly="1"/>
                             <field name="hp_invoice_date"   string="HP Date"        readonly="1"/>
                             <field name="hp_total_amount"   string="HP Total"       readonly="1"/>
+                            <field name="hp_bank_acc_no"        string="HP Bank Name"     readonly="1"/>
+                            <field name="hp_transaction_id" string="HP Transaction ID" readonly="1"/>
                         </group>
                         <group>
                             <field name="amount_difference" string="Difference"     readonly="1"/>
-                            <field name="name_mismatch"     string="Name Mismatch"  readonly="1"/>
                             <field name="amount_mismatch"   string="Amount Mismatch" readonly="1"/>
                         </group>
                     </group>

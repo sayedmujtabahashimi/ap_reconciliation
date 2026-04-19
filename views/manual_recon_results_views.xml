@@ -10,25 +10,27 @@
         <field name="model">fin.manual.reconciliation.line</field>
         <field name="arch" type="xml">
             <tree string="Manual Reconciliation Results"
-                  decoration-danger="name_mismatch == True or amount_mismatch == True"
+                  decoration-danger="amount_mismatch == True"
                   decoration-warning="found_in_b == False"
-                  decoration-success="found_in_b == True and name_mismatch == False and amount_mismatch == False"
+                  decoration-success="found_in_b == True and amount_mismatch == False"
                   create="false" delete="false" edit="false">
                 <field name="reconciliation_id"  string="Reconciliation"/>
                 <field name="invoice_number"     string="Invoice #"/>
                 <field name="a_customer"         string="Customer"/>
                 <field name="a_date"             string="Date"/>
                 <field name="a_total"            string="Total"/>
+                <field name="a_bank_acc_no"          string="Bank Name"/>
+                <field name="a_transaction_id"   string="Transaction ID"/>
                 <field name="found_in_b"         string="In HesabPay" widget="boolean_toggle"/>
-                <field name="b_customer"         string="HP Customer"
-                       decoration-danger="name_mismatch == True"/>
+                <field name="b_customer"         string="HP Customer"/>
                 <field name="b_date"             string="HP Date"/>
                 <field name="b_total"            string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
+                <field name="b_bank_acc_no"          string="HP Bank Name"/>
+                <field name="b_transaction_id"   string="HP Transaction ID"/>
                 <field name="amount_difference"  string="Difference"
                        decoration-danger="amount_mismatch == True"
                        decoration-success="amount_mismatch == False and found_in_b == True"/>
-                <field name="name_mismatch"      column_invisible="1"/>
                 <field name="amount_mismatch"    column_invisible="1"/>
             </tree>
         </field>
@@ -52,16 +54,13 @@
                 <!-- Filters -->
                 <filter name="filter_mismatch"
                         string="Mismatches"
-                        domain="['|', ('name_mismatch','=',True), ('amount_mismatch','=',True)]"/>
+                        domain="[('amount_mismatch','=',True)]"/>
                 <filter name="filter_not_found"
                         string="Not Found in HesabPay"
                         domain="[('found_in_b','=',False)]"/>
                 <filter name="filter_amount_mismatch"
                         string="Amount Mismatch"
                         domain="[('amount_mismatch','=',True)]"/>
-                <filter name="filter_name_mismatch"
-                        string="Name Mismatch"
-                        domain="[('name_mismatch','=',True)]"/>
                 <separator/>
                 <filter name="filter_today"
                         string="Today"
@@ -120,6 +119,8 @@
                             <field name="a_customer"        string="Customer"       readonly="1"/>
                             <field name="a_date"            string="Date"           readonly="1"/>
                             <field name="a_total"           string="Total"          readonly="1"/>
+                            <field name="a_bank_acc_no"         string="Bank Name"        readonly="1"/>
+                            <field name="a_transaction_id"  string="Transaction ID" readonly="1"/>
                         </group>
                     </group>
                     <group string="HesabPay Details">
@@ -128,10 +129,11 @@
                             <field name="b_customer"        string="HP Customer"    readonly="1"/>
                             <field name="b_date"            string="HP Date"        readonly="1"/>
                             <field name="b_total"           string="HP Total"       readonly="1"/>
+                            <field name="b_bank_acc_no"         string="HP Bank Name"     readonly="1"/>
+                            <field name="b_transaction_id"  string="HP Transaction ID" readonly="1"/>
                         </group>
                         <group>
                             <field name="amount_difference" string="Difference"     readonly="1"/>
-                            <field name="name_mismatch"     string="Name Mismatch"  readonly="1"/>
                             <field name="amount_mismatch"   string="Amount Mismatch" readonly="1"/>
                         </group>
                     </group>

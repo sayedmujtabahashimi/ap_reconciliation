@@ -9,24 +9,26 @@
         <field name="name">fin.manual.reconciliation.line.tree.all</field>
         <field name="model">fin.manual.reconciliation.line</field>
         <field name="arch" type="xml">
-            <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
+            <tree decoration-danger="amount_mismatch == True"
                   decoration-warning="found_in_b == False"
-                  decoration-success="found_in_b == True and name_mismatch == False and amount_mismatch == False"
+                  decoration-success="found_in_b == True and amount_mismatch == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
                 <field name="a_customer"        string="Customer"/>
                 <field name="a_date"            string="Date"/>
                 <field name="a_total"           string="Total"/>
+                <field name="a_bank_acc_no"         string="Bank Name"/>
+                <field name="a_transaction_id"  string="Transaction ID"/>
                 <field name="found_in_b"        string="In HesabPay" widget="boolean_toggle"/>
-                <field name="b_customer"        string="HP Customer"
-                       decoration-danger="name_mismatch == True"/>
+                <field name="b_customer"        string="HP Customer"/>
                 <field name="b_date"            string="HP Date"/>
                 <field name="b_total"           string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
+                <field name="b_bank_acc_no"         string="HP Bank Name"/>
+                <field name="b_transaction_id"  string="HP Transaction ID"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"
                        decoration-success="amount_mismatch == False and found_in_b == True"/>
-                <field name="name_mismatch"     column_invisible="1"/>
                 <field name="amount_mismatch"   column_invisible="1"/>
             </tree>
         </field>
@@ -40,22 +42,24 @@
         <field name="name">fin.manual.reconciliation.line.tree.mismatch</field>
         <field name="model">fin.manual.reconciliation.line</field>
         <field name="arch" type="xml">
-            <tree decoration-danger="name_mismatch == True or amount_mismatch == True"
+            <tree decoration-danger="amount_mismatch == True"
                   decoration-warning="found_in_b == False"
                   create="false" delete="false" edit="false">
                 <field name="invoice_number"    string="Invoice #"/>
                 <field name="a_customer"        string="Customer"/>
                 <field name="a_date"            string="Date"/>
                 <field name="a_total"           string="Total"/>
+                <field name="a_bank_acc_no"         string="Bank Name"/>
+                <field name="a_transaction_id"  string="Transaction ID"/>
                 <field name="found_in_b"        column_invisible="1"/>
-                <field name="b_customer"        string="HP Customer"
-                       decoration-danger="name_mismatch == True"/>
+                <field name="b_customer"        string="HP Customer"/>
                 <field name="b_date"            string="HP Date"/>
                 <field name="b_total"           string="HP Total"
                        decoration-danger="amount_mismatch == True"/>
+                <field name="b_bank_acc_no"         string="HP Bank Name"/>
+                <field name="b_transaction_id"  string="HP Transaction ID"/>
                 <field name="amount_difference" string="Difference"
                        decoration-danger="amount_mismatch == True"/>
-                <field name="name_mismatch"     column_invisible="1"/>
                 <field name="amount_mismatch"   column_invisible="1"/>
             </tree>
         </field>
