@@ -14,10 +14,10 @@ except ImportError:
 
 
 class FinReconciliation(models.Model):
-    _name        = 'fin.reconciliation'
+    _name = 'fin.reconciliation'
     _description = 'Financial Reconciliation'
-    _order       = 'id desc'
-    _rec_name    = 'name'
+    _order = 'id desc'
+    _rec_name = 'name'
 
     # ── Record rule support: users see only their own records ─────────────────
     # Managers bypass this via record rules defined in groups.xml
@@ -31,15 +31,15 @@ class FinReconciliation(models.Model):
     )
 
     date_filter = fields.Selection([
-        ('today',      'Today'),
-        ('this_week',  'This Week'),
+        ('today', 'Today'),
+        ('this_week', 'This Week'),
         ('this_month', 'This Month'),
-        ('this_year',  'This Year'),
-        ('custom',     'Custom Range'),
+        ('this_year', 'This Year'),
+        ('custom', 'Custom Range'),
     ], string='Date Filter', default='this_month', required=True)
 
     date_from = fields.Date(string='Date From')
-    date_to   = fields.Date(string='Date To')
+    date_to = fields.Date(string='Date To')
 
     journal_ids = fields.Many2many(
         'account.journal',
@@ -51,16 +51,16 @@ class FinReconciliation(models.Model):
     )
 
     invoice_number_filter = fields.Selection([
-        ('MoFA',     'MoFA'),
+        ('MoFA', 'MoFA'),
         ('MoFA VIP', 'MoFA VIP'),
-        ('MoHE',     'MoHE'),
+        ('MoHE', 'MoHE'),
         ('MoHE VIP', 'MoHE VIP'),
-        ('EDOK',     'EDOK'),
-        ('TVETA',    'TVETA'),
-        ('MoE',      'MoE'),
+        ('EDOK', 'EDOK'),
+        ('TVETA', 'TVETA'),
+        ('MoE', 'MoE'),
     ], string='Invoice Prefix', help='Filter invoices by prefix/ministry')
 
-    excel_file     = fields.Binary(string='HesabPay Excel File', attachment=True)
+    excel_file = fields.Binary(string='HesabPay Excel File', attachment=True)
     excel_filename = fields.Char(string='Filename')
 
     line_ids = fields.One2many(
@@ -75,28 +75,28 @@ class FinReconciliation(models.Model):
         string='Mismatches',
         domain=[
             '|', ('amount_mismatch', '=', True),
-                 ('hp_found', '=', False),
+            ('hp_found', '=', False),
         ],
     )
 
     state = fields.Selection([
-        ('draft',      'Draft'),
-        ('loaded',     'Invoices Loaded'),
+        ('draft', 'Draft'),
+        ('loaded', 'Invoices Loaded'),
         ('reconciled', 'Reconciled'),
     ], default='draft', string='State', required=True, index=True)
 
-    total_lines     = fields.Integer(compute='_compute_summary', store=True)
-    matched_lines   = fields.Integer(compute='_compute_summary', store=True)
-    mismatch_lines  = fields.Integer(compute='_compute_summary', store=True)
+    total_lines = fields.Integer(compute='_compute_summary', store=True)
+    matched_lines = fields.Integer(compute='_compute_summary', store=True)
+    mismatch_lines = fields.Integer(compute='_compute_summary', store=True)
     not_found_lines = fields.Integer(compute='_compute_summary', store=True)
 
     @api.depends('line_ids.hp_found', 'line_ids.amount_mismatch')
     def _compute_summary(self):
         for rec in self:
             lines = rec.line_ids
-            rec.total_lines     = len(lines)
+            rec.total_lines = len(lines)
             rec.not_found_lines = len(lines.filtered(lambda l: not l.hp_found))
-            rec.mismatch_lines  = len(lines.filtered(
+            rec.mismatch_lines = len(lines.filtered(
                 lambda l: l.hp_found and l.amount_mismatch
             ))
             rec.matched_lines = len(lines.filtered(
@@ -106,138 +106,144 @@ class FinReconciliation(models.Model):
     # ── Actions ───────────────────────────────────────────────────────────────
 
     def action_load_data(self):
-        """Load invoices from Odoo with high-performance batch processing."""
+        """Ultra-fast load using SQL batch processing."""
         self.ensure_one()
         from datetime import timedelta
 
         today = fields.Date.today()
 
+        # ---- Date filter ----
         if self.date_filter == 'today':
             d_from = d_to = today
         elif self.date_filter == 'this_week':
             d_from = today - timedelta(days=today.weekday())
-            d_to   = d_from + timedelta(days=6)
+            d_to = d_from + timedelta(days=6)
         elif self.date_filter == 'this_month':
             d_from = today.replace(day=1)
-            d_to   = today
+            d_to = today
         elif self.date_filter == 'this_year':
             d_from = today.replace(month=1, day=1)
-            d_to   = today
+            d_to = today
         elif self.date_filter == 'custom':
             d_from = self.date_from
-            d_to   = self.date_to
+            d_to = self.date_to
         else:
             d_from = d_to = None
 
-        date_domain = []
-        if d_from and d_to:
-            date_domain = [
-                '|',
-                '&', ('invoice_date', '>=', d_from), ('invoice_date', '<=', d_to),
-                '&', ('invoice_date', '=', False),
-                '&', ('date', '>=', d_from), ('date', '<=', d_to),
-            ]
-        elif d_from:
-            date_domain = [
-                '|',
-                ('invoice_date', '>=', d_from),
-                '&', ('invoice_date', '=', False), ('date', '>=', d_from),
-            ]
-        elif d_to:
-            date_domain = [
-                '|',
-                ('invoice_date', '<=', d_to),
-                '&', ('invoice_date', '=', False), ('date', '<=', d_to),
-            ]
-
+        # ---- Build domain safely ----
         domain = [
             ('state', '!=', 'cancel'),
             ('move_type', 'in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']),
-        ] + date_domain
+        ]
+
+        if d_from:
+            domain.append(('date', '>=', d_from))
+        if d_to:
+            domain.append(('date', '<=', d_to))
 
         if self.journal_ids:
-            domain += [('journal_id', 'in', self.journal_ids.ids)]
+            domain.append(('journal_id', 'in', self.journal_ids.ids))
 
         if self.invoice_number_filter:
-            domain += [('payment_reference', 'ilike', self.invoice_number_filter)]
+            domain.append(('payment_reference', 'ilike', self.invoice_number_filter))
 
-        _logger.info('FinRecon domain: %s', domain)
+        # ---- Step 1: get invoices (LIMIT مهم) ----
+        invoices = self.env['account.move'].search(domain, order='id asc', limit=30000)
+        if not invoices:
+            return
 
-        # High-performance: read_group + read instead of ORM browse
-        invoices = self.env['account.move'].search(
-            domain, order='name asc', limit=10000
-        )
-        _logger.info('FinRecon found %d invoices', len(invoices))
+        move_ids = invoices.ids
 
-        # Delete old lines with direct SQL for speed
-        if self.line_ids:
-            self.env.cr.execute(
-                'DELETE FROM fin_reconciliation_line WHERE reconciliation_id = %s',
-                (self.id,)
-            )
-            self.invalidate_recordset()
-
-        # Batch read only needed fields
+        # ---- Step 2: fetch invoice basic data ----
         invoice_data = invoices.read([
-            'name', 'partner_id', 'invoice_date', 'date',
-            'amount_total', 'currency_id', 'id', 'state', 'payment_state',
+            'id', 'name', 'partner_id', 'invoice_date', 'date',
+            'amount_total', 'currency_id', 'state', 'payment_state',
         ])
 
-        # transaction_id and bank_id live on the afp invoice models (egp_accounting module).
-        # We batch-fetch from each model and build a lookup: account.move id → (transaction_id, bank_name)
-        move_ids = [r['id'] for r in invoice_data]
-        move_extra = {}  # {move_id: {'transaction_id': ..., 'bank_acc_no': ...}}
+        # ---- Step 3: fetch transaction + bank in ONE query ----
+        query = """
+            SELECT invoice_id, transaction_id, bank_id FROM afp_invoice_mofa WHERE invoice_id = ANY(%s)
+            UNION ALL
+            SELECT invoice_id, transaction_id, bank_id FROM afp_invoice_mohe WHERE invoice_id = ANY(%s)
+            UNION ALL
+            SELECT invoice_id, transaction_id, bank_id FROM afp_invoice_moe WHERE invoice_id = ANY(%s)
+            UNION ALL
+            SELECT invoice_id, transaction_id, bank_id FROM afp_invoice_tveta WHERE invoice_id = ANY(%s)
+            UNION ALL
+            SELECT invoice_id, transaction_id, bank_id FROM afp_invoice_edok WHERE invoice_id = ANY(%s)
+            UNION ALL
+            SELECT invoice_id, transaction_id, bank_id FROM afp_vip_invoice_mofa WHERE invoice_id = ANY(%s)
+            UNION ALL
+            SELECT invoice_id, transaction_id, bank_id FROM afp_vip_invoice_mohe WHERE invoice_id = ANY(%s)
+        """
 
-        AFP_MODELS = [
-            'afp.invoice.mofa',
-            'afp.invoice.mohe',
-            'afp.invoice.moe',
-            'afp.invoice.tveta',
-            'afp.invoice.edok',
-            'afp.vip.invoice.mofa',
-            'afp.vip.invoice.mohe',
-        ]
-        for model_name in AFP_MODELS:
-            try:
-                records = self.env[model_name].search_read(
-                    [('invoice_id', 'in', move_ids)],
-                    ['invoice_id', 'transaction_id', 'bank_id'],
-                )
-            except Exception:
-                continue
-            for rec in records:
-                mid = rec['invoice_id'][0] if isinstance(rec['invoice_id'], (list, tuple)) else rec['invoice_id']
-                if mid in move_extra:
-                    continue  # already found from a higher-priority model
-                bank_name = ''
-                if rec.get('bank_id'):
-                    bank_name = rec['bank_id'][1] if isinstance(rec['bank_id'], (list, tuple)) else ''
-                move_extra[mid] = {
-                    'transaction_id': str(rec.get('transaction_id') or ''),
-                    'bank_acc_no':    bank_name,
-                }
+        params = [move_ids] * 7
+        self.env.cr.execute(query, params)
+        results = self.env.cr.fetchall()
 
-        vals_list = []
+        # map invoice_id -> (transaction_id, bank_id)
+        extra_map = {}
+        for invoice_id, transaction_id, bank_id in results:
+            if invoice_id not in extra_map:
+                extra_map[invoice_id] = (transaction_id, bank_id)
+
+        # ---- Step 4: preload bank names (avoid ORM inside loop) ----
+        bank_ids = list({b for _, b in extra_map.values() if b})
+        bank_map = {}
+
+        if bank_ids:
+            self.env.cr.execute(
+                "SELECT id, name FROM res_bank WHERE id = ANY(%s)",
+                (bank_ids,)
+            )
+            bank_map = dict(self.env.cr.fetchall())
+
+        # ---- Step 5: delete old lines fast ----
+        self.env.cr.execute(
+            "DELETE FROM fin_reconciliation_line WHERE reconciliation_id = %s",
+            (self.id,)
+        )
+
+        # ---- Step 6: prepare bulk insert ----
+        insert_values = []
+
         for r in invoice_data:
-            extra = move_extra.get(r['id'], {})
-            vals_list.append({
-                'reconciliation_id': self.id,
-                'invoice_number':    r['name'],
-                'partner_name':      r['partner_id'][1] if r['partner_id'] else '',
-                'invoice_date':      r['invoice_date'] or r['date'],
-                'total_amount':      r['amount_total'],
-                'currency_id':       r['currency_id'][0] if r['currency_id'] else False,
-                'move_id':           r['id'],
-                'status':            r['state'],
-                'payment_state':     r['payment_state'] or '',
-                'bank_acc_no':       extra.get('bank_acc_no', ''),
-                'transaction_id':    extra.get('transaction_id', ''),
-            })
+            tx, bank_id = extra_map.get(r['id'], ('', None))
+            bank_name = bank_map.get(bank_id, '')
 
-        if vals_list:
-            # Batch create for maximum performance
-            self.env['fin.reconciliation.line'].create(vals_list)
+            insert_values.append((
+                self.id,
+                r['name'],
+                r['partner_id'][1] if r['partner_id'] else '',
+                r['invoice_date'] or r['date'],
+                r['amount_total'],
+                r['currency_id'][0] if r['currency_id'] else None,
+                r['id'],
+                r['state'],
+                r['payment_state'] or '',
+                bank_name,
+                tx or '',
+            ))
 
+        # ---- Step 7: ultra-fast bulk insert ----
+        if insert_values:
+            self.env.cr.executemany("""
+                INSERT INTO fin_reconciliation_line (
+                    reconciliation_id,
+                    invoice_number,
+                    partner_name,
+                    invoice_date,
+                    total_amount,
+                    currency_id,
+                    move_id,
+                    status,
+                    payment_state,
+                    bank_acc_no,
+                    transaction_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, insert_values)
+
+        # ---- Step 8: finish ----
         self.write({'state': 'loaded'})
         return self._reload()
 
@@ -255,22 +261,22 @@ class FinReconciliation(models.Model):
         lines = self.line_ids
         line_map = {l.invoice_number: l for l in lines}
 
-        matched_vals   = []
-        unmatched_ids  = []
+        matched_vals = []
+        unmatched_ids = []
 
         for inv_no, line in line_map.items():
             hp = hp_data.get(inv_no)
             if hp:
                 diff = line.total_amount - hp['total']
                 matched_vals.append((line.id, {
-                    'hp_partner_name':   hp['customer'],
-                    'hp_total_amount':   hp['total'],
-                    'hp_invoice_date':   hp['date'],
-                    'hp_bank_acc_no':        hp.get('bank_acc_no', ''),
+                    'hp_partner_name': hp['customer'],
+                    'hp_total_amount': hp['total'],
+                    'hp_invoice_date': hp['date'],
+                    'hp_bank_acc_no': hp.get('bank_acc_no', ''),
                     'hp_transaction_id': hp.get('transaction_id', ''),
-                    'hp_found':          True,
+                    'hp_found': True,
                     'amount_difference': diff,
-                    'amount_mismatch':   abs(diff) > 0.01,
+                    'amount_mismatch': abs(diff) > 0.01,
                 }))
             else:
                 unmatched_ids.append(line.id)
@@ -282,13 +288,13 @@ class FinReconciliation(models.Model):
         # Batch reset unmatched lines
         if unmatched_ids:
             self.env['fin.reconciliation.line'].browse(unmatched_ids).write({
-                'hp_found':          False,
-                'hp_partner_name':   '',
-                'hp_total_amount':   0.0,
-                'hp_bank_acc_no':        '',
+                'hp_found': False,
+                'hp_partner_name': '',
+                'hp_total_amount': 0.0,
+                'hp_bank_acc_no': '',
                 'hp_transaction_id': '',
                 'amount_difference': 0.0,
-                'amount_mismatch':   False,
+                'amount_mismatch': False,
             })
 
         self.write({'state': 'reconciled'})
@@ -301,15 +307,15 @@ class FinReconciliation(models.Model):
             raise UserError('openpyxl is not installed.')
 
         from openpyxl.styles import PatternFill, Font, Alignment
-        wb  = openpyxl.Workbook()
-        ws  = wb.active
+        wb = openpyxl.Workbook()
+        ws = wb.active
         ws.title = 'Reconciliation'
 
-        hdr_fill      = PatternFill('solid', fgColor='4472C4')
+        hdr_fill = PatternFill('solid', fgColor='4472C4')
         mismatch_fill = PatternFill('solid', fgColor='FFCCCC')
-        ok_fill       = PatternFill('solid', fgColor='CCFFCC')
-        nf_fill       = PatternFill('solid', fgColor='FFF2CC')
-        hdr_font      = Font(bold=True, color='FFFFFF')
+        ok_fill = PatternFill('solid', fgColor='CCFFCC')
+        nf_fill = PatternFill('solid', fgColor='FFF2CC')
+        hdr_font = Font(bold=True, color='FFFFFF')
 
         headers = [
             'Invoice #', 'Bank ID', 'Transaction ID', 'Customer', 'Date', 'Total',
@@ -354,14 +360,14 @@ class FinReconciliation(models.Model):
         buf.seek(0)
 
         attach = self.env['ir.attachment'].create({
-            'name':     f'{self.name}_report.xlsx',
-            'type':     'binary',
-            'datas':    base64.b64encode(buf.read()),
+            'name': f'{self.name}_report.xlsx',
+            'type': 'binary',
+            'datas': base64.b64encode(buf.read()),
             'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         })
         return {
-            'type':   'ir.actions.act_url',
-            'url':    f'/web/content/{attach.id}?download=true',
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attach.id}?download=true',
             'target': 'self',
         }
 
@@ -377,11 +383,11 @@ class FinReconciliation(models.Model):
 
     def _reload(self):
         return {
-            'type':      'ir.actions.act_window',
+            'type': 'ir.actions.act_window',
             'res_model': 'fin.reconciliation',
-            'res_id':    self.id,
+            'res_id': self.id,
             'view_mode': 'form',
-            'target':    'current',
+            'target': 'current',
         }
 
     def _parse_excel(self, file_field):
@@ -399,10 +405,10 @@ class FinReconciliation(models.Model):
             if not any(row):
                 continue
             try:
-                number   = str(row[0]).strip() if row[0] is not None else ''
+                number = str(row[0]).strip() if row[0] is not None else ''
                 customer = str(row[1]).strip() if row[1] is not None else ''
-                total    = float(row[2])        if row[2] is not None else 0.0
-                date     = row[3]
+                total = float(row[2]) if row[2] is not None else 0.0
+                date = row[3]
                 if hasattr(date, 'date'):
                     date = date.date()
                 elif isinstance(date, str):
@@ -413,14 +419,14 @@ class FinReconciliation(models.Model):
                             break
                         except ValueError:
                             date = None
-                bank_acc_val     = str(row[4]).strip() if len(row) > 4 and row[4] is not None else ''
+                bank_acc_val = str(row[4]).strip() if len(row) > 4 and row[4] is not None else ''
                 transaction_id_val = str(row[5]).strip() if len(row) > 5 and row[5] is not None else ''
                 if number:
                     data[number] = {
-                        'customer':       customer,
-                        'total':          total,
-                        'date':           date,
-                        'bank_acc_no':        bank_acc_val,
+                        'customer': customer,
+                        'total': total,
+                        'date': date,
+                        'bank_acc_no': bank_acc_val,
                         'transaction_id': transaction_id_val,
                     }
             except Exception as e:
@@ -430,28 +436,28 @@ class FinReconciliation(models.Model):
 
 
 class FinReconciliationLine(models.Model):
-    _name        = 'fin.reconciliation.line'
+    _name = 'fin.reconciliation.line'
     _description = 'Financial Reconciliation Line'
-    _order       = 'invoice_number asc'
+    _order = 'invoice_number asc'
 
     # DB index on foreign key for fast joins
     reconciliation_id = fields.Many2one(
         'fin.reconciliation', ondelete='cascade', required=True, index=True
     )
 
-    move_id        = fields.Many2one('account.move', ondelete='set null', index=True)
+    move_id = fields.Many2one('account.move', ondelete='set null', index=True)
     invoice_number = fields.Char(string='Invoice #', index=True)
-    partner_name   = fields.Char(string='Customer')
-    invoice_date   = fields.Date(string='Date')
-    total_amount   = fields.Float(string='Total', digits=(16, 2))
-    currency_id    = fields.Many2one('res.currency')
-    status         = fields.Char(string='Status')
-    payment_state  = fields.Char(string='Payment')
+    partner_name = fields.Char(string='Customer')
+    invoice_date = fields.Date(string='Date')
+    total_amount = fields.Float(string='Total', digits=(16, 2))
+    currency_id = fields.Many2one('res.currency')
+    status = fields.Char(string='Status')
+    payment_state = fields.Char(string='Payment')
 
     bank_acc_no = fields.Char(string='Bank Name')
     transaction_id = fields.Char(string='Transaction ID')
 
-    hp_found        = fields.Boolean(string='In HesabPay', default=False, index=True)
+    hp_found = fields.Boolean(string='In HesabPay', default=False, index=True)
     hp_partner_name = fields.Char(string='HP Customer')
     hp_invoice_date = fields.Date(string='HP Date')
     hp_total_amount = fields.Float(string='HP Total', digits=(16, 2))
@@ -459,4 +465,4 @@ class FinReconciliationLine(models.Model):
     hp_transaction_id = fields.Char(string='HP Transaction ID')
 
     amount_difference = fields.Float(string='Difference', digits=(16, 2))
-    amount_mismatch   = fields.Boolean(string='Amount Mismatch', default=False, index=True)
+    amount_mismatch = fields.Boolean(string='Amount Mismatch', default=False, index=True)
